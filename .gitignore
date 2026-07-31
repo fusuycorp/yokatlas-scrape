@@ -31,6 +31,14 @@ env/
 output/*
 !output/.gitkeep
 
+# Kaggle raw zip & download data
+kaggle_data/
+*.zip
+
+# Frontend Node Modules & Dist
+dashboard-ui/node_modules/
+dashboard-ui/dist/
+
 # IDE / OS
 .vscode/
 .idea/
