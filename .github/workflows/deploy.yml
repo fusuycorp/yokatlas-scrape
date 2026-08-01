@@ -56,7 +56,7 @@ jobs:
         env:
           DOKPLOY_URL: ${{ secrets.DOKPLOY_URL || 'https://dokploy.bogazici.app' }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
-          DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID || 'wbcpju' }}
+          DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID || 'XDOIv2PdTkrsjfzu5eSRH' }}
         run: |
           if [ -z "$DOKPLOY_API_KEY" ]; then
             echo "::error::DOKPLOY_API_KEY secret is not configured."
