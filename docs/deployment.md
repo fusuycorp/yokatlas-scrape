@@ -1,6 +1,6 @@
 # Production Deployment Guide: Docker Swarm & Dokploy
 
-This document details the production deployment pipeline for **UniAtlas** (`atlas.bogazici.app`) using Dokploy, Docker Swarm stacks, custom container registries, and GitHub Actions.
+This document details the production deployment pipeline for **UniAtlas** (`unilist.bogazici.app`) using Dokploy, Docker Swarm stacks, custom container registries, and GitHub Actions.
 
 ---
 
@@ -28,7 +28,17 @@ To configure CI/CD deployment, add the following Repository Secrets in GitHub (*
 | `REGISTRY_PASSWORD` | Access token / Password for `registry.bogazici.app` | **Yes** |
 | `DOKPLOY_API_KEY` | API Key generated in Dokploy Settings | **Yes** |
 | `DOKPLOY_URL` | `https://dokploy.bogazici.app` | Optional |
-| `DOKPLOY_COMPOSE_ID` | Compose Stack ID created in Dokploy for `uniatlas` | **Yes** |
+| `DOKPLOY_COMPOSE_ID` | `XDOIv2PdTkrsjfzu5eSRH` | **Yes** |
+
+---
+
+## Domain Configuration in Dokploy
+
+- **Domain**: `unilist.bogazici.app`
+- **Port**: `8000`
+- **Service Name**: `app`
+- **HTTPS & SSL**: Enabled (`letsencrypt` cert resolver)
+- **Domain ID**: `apIeDqzvyR1y56Ekn0Tno`
 
 ---
 
@@ -38,24 +48,21 @@ To configure CI/CD deployment, add the following Repository Secrets in GitHub (*
 version: '3.8'
 
 services:
-  uniatlas:
-    image: ${IMAGE_TAG:-registry.bogazici.app/budok/uniatlas:latest}
+  app:
+    image: ${APP_IMAGE:-registry.bogazici.app/budok/yokatlas-scrape:latest}
     environment:
       PORT: 8000
-    networks:
-      - dokploy-network
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/api/stats || exit 1"]
       interval: 20s
-      timeout: 5s
+      timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 30s
     deploy:
       replicas: 2
       update_config:
         parallelism: 1
         delay: 10s
-        order: start-first
       restart_policy:
         condition: on-failure
       placement:
@@ -63,21 +70,11 @@ services:
           - node.labels.type == tanri
       resources:
         reservations:
-          cpus: '0.50'
+          cpus: '0.25'
           memory: 512M
         limits:
-          cpus: '2.0'
+          cpus: '1.5'
           memory: 2G
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.uniatlas.rule=Host(`atlas.bogazici.app`)"
-        - "traefik.http.routers.uniatlas.entrypoints=websecure"
-        - "traefik.http.routers.uniatlas.tls.certresolver=letsencrypt"
-        - "traefik.http.services.uniatlas.loadbalancer.server.port=8000"
-
-networks:
-  dokploy-network:
-    external: true
 ```
 
 ---
@@ -120,7 +117,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: registry.bogazici.app/budok/uniatlas
+          images: registry.bogazici.app/budok/yokatlas-scrape
           tags: |
             type=raw,value=latest
             type=sha,format=long
@@ -145,18 +142,10 @@ jobs:
         env:
           DOKPLOY_URL: ${{ secrets.DOKPLOY_URL || 'https://dokploy.bogazici.app' }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
-          DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
+          DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID || 'XDOIv2PdTkrsjfzu5eSRH' }}
         run: |
           curl -f -s -S -X POST "$DOKPLOY_URL/api/compose.redeploy" \
             -H "x-api-key: $DOKPLOY_API_KEY" \
             -H "Content-Type: application/json" \
             -d "{\"composeId\": \"$DOKPLOY_COMPOSE_ID\"}"
 ```
-
----
-
-## Verification & Troubleshooting
-
-- **Check Container Health**: `docker service ps uniatlas`
-- **View Container Logs**: `docker service logs uniatlas`
-- **Verify API Health**: `curl https://atlas.bogazici.app/api/stats`
