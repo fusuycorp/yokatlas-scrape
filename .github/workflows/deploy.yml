@@ -63,7 +63,37 @@ jobs:
             exit 1
           fi
           echo "Triggering Dokploy redeployment for UniAtlas ($DOKPLOY_COMPOSE_ID)..."
-          curl -f -s -S -X POST "$DOKPLOY_URL/api/compose.redeploy" \
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DOKPLOY_URL/api/compose.redeploy" \
+            -H "auth-token: $DOKPLOY_API_KEY" \
             -H "x-api-key: $DOKPLOY_API_KEY" \
+            -H "Authorization: Bearer $DOKPLOY_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "{\"composeId\": \"$DOKPLOY_COMPOSE_ID\"}"
+            -d "{\"composeId\": \"$DOKPLOY_COMPOSE_ID\"}")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✅ Dokploy redeployment triggered successfully! (HTTP $HTTP_CODE)"
+            echo "$BODY"
+          else
+            echo "Primary endpoint returned HTTP $HTTP_CODE. Trying fallback webhook endpoint..."
+            FALLBACK_RESP=$(curl -s -w "\n%{http_code}" -X POST "$DOKPLOY_URL/api/deploy/compose?composeId=$DOKPLOY_COMPOSE_ID" \
+              -H "auth-token: $DOKPLOY_API_KEY" \
+              -H "x-api-key: $DOKPLOY_API_KEY" \
+              -H "Authorization: Bearer $DOKPLOY_API_KEY")
+
+            FALLBACK_CODE=$(echo "$FALLBACK_RESP" | tail -n 1)
+            FALLBACK_BODY=$(echo "$FALLBACK_RESP" | sed '$d')
+
+            if [ "$FALLBACK_CODE" -ge 200 ] && [ "$FALLBACK_CODE" -lt 300 ]; then
+              echo "✅ Dokploy fallback redeployment triggered successfully! (HTTP $FALLBACK_CODE)"
+              echo "$FALLBACK_BODY"
+            else
+              echo "::error::Dokploy API returned HTTP $HTTP_CODE (Fallback: HTTP $FALLBACK_CODE)."
+              echo "Primary Body: $BODY"
+              echo "Fallback Body: $FALLBACK_BODY"
+              exit 1
+            fi
+          fi
