@@ -31,6 +31,38 @@ def build_unified_database():
         print(f"Loaded {len(df_2026)} programs into 'programs_2026'")
     else:
         print("Warning: yokatlas_tercih_kilavuz.db not found!")
+        # Fallback: create empty schema if table doesn't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS programs_2026 (
+                kilavuzKodu INTEGER PRIMARY KEY,
+                osymKilavuzId INTEGER,
+                universiteAdi TEXT,
+                universiteTuru TEXT,
+                ilAdi TEXT,
+                fymkAdi TEXT,
+                birimAdi TEXT,
+                puanTuru TEXT,
+                bursOraniAdi TEXT,
+                kontenjan INTEGER,
+                basariSirasi INTEGER,
+                minPuan REAL,
+                minBasariSirasiKosul TEXT,
+                kosul_ids_extracted TEXT,
+                prof INTEGER DEFAULT 0,
+                doc INTEGER DEFAULT 0,
+                dou INTEGER DEFAULT 0,
+                arGor INTEGER DEFAULT 0,
+                akreditasyon TEXT,
+                akreditasyonAck TEXT
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS conditions_lookup (
+                id INTEGER PRIMARY KEY,
+                kosulNo TEXT,
+                kosulMetni TEXT
+            )
+        """)
 
     # 2. Load Kaggle 2019-2024 Admissions Data
     kaggle_admissions = Path("kaggle_data/01_university_admissions_turkey_2019_2024.csv")
@@ -39,6 +71,28 @@ def build_unified_database():
         df_kaggle = pd.read_csv(kaggle_admissions)
         df_kaggle.to_sql("admissions_history", conn, if_exists="replace", index=False)
         print(f"Loaded {len(df_kaggle)} historical records into 'admissions_history'")
+    else:
+        print("Warning: Kaggle admissions CSV not found!")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS admissions_history (
+                year INTEGER,
+                program_code INTEGER,
+                university_name TEXT,
+                total_quota INTEGER,
+                total_enrolled INTEGER,
+                male INTEGER,
+                female INTEGER,
+                final_score_012 REAL,
+                final_rank_012 INTEGER,
+                initial_placement_rate REAL,
+                total_preferences INTEGER,
+                demand_per_quota REAL,
+                avg_preference_rank REAL,
+                top_1_pref_count INTEGER,
+                top_3_pref_count INTEGER,
+                placed_pref_rank_avg REAL
+            )
+        """)
 
     # 3. Load Kaggle Net Stats & Lessons Data
     kaggle_net = Path("kaggle_data/department_avg_net_stats.csv")
@@ -52,6 +106,18 @@ def build_unified_database():
         df_net_merged = df_net.merge(df_lessons, on="lesson_id", how="left")
         df_net_merged.to_sql("net_stats_history", conn, if_exists="replace", index=False)
         print(f"Loaded {len(df_net_merged)} net stats entries into 'net_stats_history'")
+    else:
+        print("Warning: Kaggle net stats CSVs not found!")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS net_stats_history (
+                program_code INTEGER,
+                year INTEGER,
+                lesson_name TEXT,
+                exam_type TEXT,
+                average_net REAL,
+                max_questions INTEGER
+            )
+        """)
 
     # 4. Create Indexes for High Performance Queries
     print("Creating indexes...")
