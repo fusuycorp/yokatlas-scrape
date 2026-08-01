@@ -59,11 +59,12 @@ jobs:
           DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID || 'XDOIv2PdTkrsjfzu5eSRH' }}
         run: |
           if [ -z "$DOKPLOY_API_KEY" ]; then
-            echo "::error::DOKPLOY_API_KEY secret is not configured."
+            echo "::error::DOKPLOY_API_KEY secret is not configured in organization or repository secrets."
             exit 1
           fi
-          echo "Triggering Dokploy redeployment for UniAtlas ($DOKPLOY_COMPOSE_ID)..."
+          echo "Triggering Dokploy redeployment for Compose ID: $DOKPLOY_COMPOSE_ID at $DOKPLOY_URL..."
 
+          # Attempt 1: Standard REST API (/api/compose.redeploy)
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DOKPLOY_URL/api/compose.redeploy" \
             -H "auth-token: $DOKPLOY_API_KEY" \
             -H "x-api-key: $DOKPLOY_API_KEY" \
@@ -75,25 +76,51 @@ jobs:
           BODY=$(echo "$RESPONSE" | sed '$d')
 
           if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-            echo "✅ Dokploy redeployment triggered successfully! (HTTP $HTTP_CODE)"
+            echo "✅ Dokploy redeployment triggered successfully via REST API! (HTTP $HTTP_CODE)"
             echo "$BODY"
-          else
-            echo "Primary endpoint returned HTTP $HTTP_CODE. Trying fallback webhook endpoint..."
-            FALLBACK_RESP=$(curl -s -w "\n%{http_code}" -X POST "$DOKPLOY_URL/api/deploy/compose?composeId=$DOKPLOY_COMPOSE_ID" \
-              -H "auth-token: $DOKPLOY_API_KEY" \
-              -H "x-api-key: $DOKPLOY_API_KEY" \
-              -H "Authorization: Bearer $DOKPLOY_API_KEY")
-
-            FALLBACK_CODE=$(echo "$FALLBACK_RESP" | tail -n 1)
-            FALLBACK_BODY=$(echo "$FALLBACK_RESP" | sed '$d')
-
-            if [ "$FALLBACK_CODE" -ge 200 ] && [ "$FALLBACK_CODE" -lt 300 ]; then
-              echo "✅ Dokploy fallback redeployment triggered successfully! (HTTP $FALLBACK_CODE)"
-              echo "$FALLBACK_BODY"
-            else
-              echo "::error::Dokploy API returned HTTP $HTTP_CODE (Fallback: HTTP $FALLBACK_CODE)."
-              echo "Primary Body: $BODY"
-              echo "Fallback Body: $FALLBACK_BODY"
-              exit 1
-            fi
+            exit 0
           fi
+
+          echo "Attempt 1 returned HTTP $HTTP_CODE: $BODY"
+          echo "Attempt 2: Trying tRPC wrapped payload format..."
+
+          # Attempt 2: tRPC Wrapped Payload Format
+          TRPC_RESP=$(curl -s -w "\n%{http_code}" -X POST "$DOKPLOY_URL/api/compose.redeploy" \
+            -H "auth-token: $DOKPLOY_API_KEY" \
+            -H "x-api-key: $DOKPLOY_API_KEY" \
+            -H "Authorization: Bearer $DOKPLOY_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"json\": {\"composeId\": \"$DOKPLOY_COMPOSE_ID\"}}")
+
+          TRPC_CODE=$(echo "$TRPC_RESP" | tail -n 1)
+          TRPC_BODY=$(echo "$TRPC_RESP" | sed '$d')
+
+          if [ "$TRPC_CODE" -ge 200 ] && [ "$TRPC_CODE" -lt 300 ]; then
+            echo "✅ Dokploy redeployment triggered successfully via tRPC API! (HTTP $TRPC_CODE)"
+            echo "$TRPC_BODY"
+            exit 0
+          fi
+
+          echo "Attempt 2 returned HTTP $TRPC_CODE: $TRPC_BODY"
+          echo "Attempt 3: Trying Dokploy deploy webhook route..."
+
+          # Attempt 3: Dokploy Webhook Endpoint
+          WEBHOOK_RESP=$(curl -s -w "\n%{http_code}" -X POST "$DOKPLOY_URL/api/deploy/compose?composeId=$DOKPLOY_COMPOSE_ID" \
+            -H "auth-token: $DOKPLOY_API_KEY" \
+            -H "x-api-key: $DOKPLOY_API_KEY" \
+            -H "Authorization: Bearer $DOKPLOY_API_KEY")
+
+          WEBHOOK_CODE=$(echo "$WEBHOOK_RESP" | tail -n 1)
+          WEBHOOK_BODY=$(echo "$WEBHOOK_RESP" | sed '$d')
+
+          if [ "$WEBHOOK_CODE" -ge 200 ] && [ "$WEBHOOK_CODE" -lt 300 ]; then
+            echo "✅ Dokploy redeployment triggered successfully via Webhook! (HTTP $WEBHOOK_CODE)"
+            echo "$WEBHOOK_BODY"
+            exit 0
+          fi
+
+          echo "::error::All Dokploy API attempts failed."
+          echo "REST API (HTTP $HTTP_CODE): $BODY"
+          echo "tRPC API (HTTP $TRPC_CODE): $TRPC_BODY"
+          echo "Webhook  (HTTP $WEBHOOK_CODE): $WEBHOOK_BODY"
+          exit 1
