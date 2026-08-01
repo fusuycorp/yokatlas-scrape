@@ -1,28 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { X, Award, Users, AlertTriangle, Building2, MapPin, Bookmark } from 'lucide-react';
+import React from 'react';
+import { X, Users, AlertTriangle, Bookmark } from 'lucide-react';
+import { useTrends } from '../../../hooks/useTrends';
+import { useLanguage } from '../../../hooks/useLanguage';
+import { formatRank, formatScore } from '../../../utils/formatters';
+import { Spinner } from '../../ui/Spinner';
+import { Badge } from '../../ui/Badge';
 
-export default function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmarked }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!programCode) return;
-    setLoading(true);
-    fetch(`/api/trends/${programCode}`)
-      .then((res) => res.json())
-      .then((res) => {
-        setData(res);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
-  }, [programCode]);
+export function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmarked }) {
+  const { data, loading } = useTrends(programCode);
+  const { t } = useLanguage();
+  const p = data?.program;
 
   if (!programCode) return null;
-
-  const p = data?.program;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
@@ -30,54 +19,58 @@ export default function ProgramModal({ programCode, onClose, onToggleBookmark, i
         {/* Header */}
         <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
-            <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300">
-              Program Code: {programCode}
-            </span>
-            <h2 className="text-xl font-bold text-white mt-1">{p?.birimAdi || 'Program Details'}</h2>
-            <p className="text-sm font-medium text-slate-300">{p?.universiteAdi} ({p?.ilAdi})</p>
+            <Badge variant="indigo">{t('modal.programCode', { code: programCode })}</Badge>
+            <h2 className="text-xl font-bold text-white mt-1">{p?.birimAdi || t('modal.defaultTitle')}</h2>
+            <p className="text-sm font-medium text-slate-300">
+              {p?.universiteAdi} ({p?.ilAdi})
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
             {p && (
               <button
                 onClick={() => onToggleBookmark(p)}
-                className={`p-2 rounded-xl border transition ${isBookmarked ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-300'}`}
+                className={`p-2 rounded-xl border transition ${
+                  isBookmarked
+                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                    : 'bg-slate-800 border-slate-700 text-slate-300'
+                }`}
               >
                 <Bookmark className="w-5 h-5 fill-current" />
               </button>
             )}
-            <button onClick={onClose} className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition">
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-slate-500">
-            <div className="inline-block w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-            <p>Loading program specs...</p>
-          </div>
+          <Spinner message={t('modal.loading')} />
         ) : p ? (
           <div className="space-y-5 text-xs text-slate-300">
             {/* Quick Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <p className="text-slate-400">2026 Min Rank</p>
-                <p className="text-base font-bold text-indigo-400">{p.basariSirasi ? p.basariSirasi.toLocaleString() : '—'}</p>
+                <p className="text-slate-400">{t('modal.minRank2026')}</p>
+                <p className="text-base font-bold text-indigo-400">{formatRank(p.basariSirasi)}</p>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <p className="text-slate-400">2026 Min Score</p>
-                <p className="text-base font-bold text-white">{p.minPuan ? p.minPuan.toFixed(2) : '—'}</p>
+                <p className="text-slate-400">{t('modal.minScore2026')}</p>
+                <p className="text-base font-bold text-white">{formatScore(p.minPuan)}</p>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <p className="text-slate-400">Quota (Kontenjan)</p>
+                <p className="text-slate-400">{t('modal.quota')}</p>
                 <p className="text-base font-bold text-white">{p.kontenjan || '—'}</p>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <p className="text-slate-400">Score Field</p>
+                <p className="text-slate-400">{t('modal.scoreField')}</p>
                 <p className="text-base font-bold text-cyan-400">{p.puanTuru}</p>
               </div>
             </div>
@@ -86,24 +79,24 @@ export default function ProgramModal({ programCode, onClose, onToggleBookmark, i
             <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
               <h4 className="font-bold text-slate-200 flex items-center gap-2">
                 <Users className="w-4 h-4 text-indigo-400" />
-                <span>Academic Staff Breakdown</span>
+                <span>{t('modal.academicStaff')}</span>
               </h4>
               <div className="grid grid-cols-4 gap-2 text-center pt-1">
                 <div className="p-2 rounded-lg bg-slate-800">
                   <span className="block font-bold text-white text-sm">{p.prof}</span>
-                  <span className="text-[10px] text-slate-400">Professors</span>
+                  <span className="text-[10px] text-slate-400">{t('modal.professors')}</span>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-800">
                   <span className="block font-bold text-white text-sm">{p.doc}</span>
-                  <span className="text-[10px] text-slate-400">Assoc. Profs</span>
+                  <span className="text-[10px] text-slate-400">{t('modal.assocProfs')}</span>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-800">
                   <span className="block font-bold text-white text-sm">{p.dou}</span>
-                  <span className="text-[10px] text-slate-400">Asst. Profs</span>
+                  <span className="text-[10px] text-slate-400">{t('modal.asstProfs')}</span>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-800">
                   <span className="block font-bold text-white text-sm">{p.arGor}</span>
-                  <span className="text-[10px] text-slate-400">Research Asst</span>
+                  <span className="text-[10px] text-slate-400">{t('modal.researchAsst')}</span>
                 </div>
               </div>
             </div>
@@ -113,7 +106,7 @@ export default function ProgramModal({ programCode, onClose, onToggleBookmark, i
               <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold">
                   <AlertTriangle className="w-4 h-4 text-amber-400" />
-                  <span>Official YÖK Threshold Requirement</span>
+                  <span>{t('modal.thresholdTitle')}</span>
                 </div>
                 <p>{p.minBasariSirasiKosul}</p>
               </div>
@@ -124,3 +117,4 @@ export default function ProgramModal({ programCode, onClose, onToggleBookmark, i
     </div>
   );
 }
+

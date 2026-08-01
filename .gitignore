@@ -32,7 +32,8 @@ output/*
 !output/.gitkeep
 
 # Kaggle raw zip & download data
-kaggle_data/
+kaggle_data/*
+!kaggle_data/.gitkeep
 *.zip
 
 # Frontend Node Modules & Dist

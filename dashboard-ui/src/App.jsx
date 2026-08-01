@@ -1,56 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import Navbar from './components/Navbar';
-import OverviewTab from './components/OverviewTab';
-import ComparatorTab from './components/ComparatorTab';
-import TrendsTab from './components/TrendsTab';
-import WizardTab from './components/WizardTab';
-import ProgramModal from './components/ProgramModal';
-import PreferenceDrawer from './components/PreferenceDrawer';
+import React, { useState } from 'react';
+import { useBookmarks } from './hooks/useBookmarks';
+import { Navbar } from './components/features/common/Navbar';
+import { Footer } from './components/features/common/Footer';
+import { ProgramModal } from './components/features/common/ProgramModal';
+import { UniversityDetailModal } from './components/features/university/UniversityDetailModal';
+import { ProgramExplorerTab } from './components/features/explorer/ProgramExplorerTab';
+import { UniComparatorTab } from './components/features/comparator/UniComparatorTab';
+import { RankTrendsTab } from './components/features/trends/RankTrendsTab';
+import { PreferenceWizardTab } from './components/features/wizard/PreferenceWizardTab';
+import { PreferenceDrawer } from './components/features/bookmarks/PreferenceDrawer';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('explorer');
   const [selectedProgramCode, setSelectedProgramCode] = useState(null);
+  const [selectedUniName, setSelectedUniName] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Saved preferences in localStorage
-  const [savedPrograms, setSavedPrograms] = useState(() => {
-    try {
-      const saved = localStorage.getItem('yks_saved_preferences');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem('yks_saved_preferences', JSON.stringify(savedPrograms));
-  }, [savedPrograms]);
-
-  const bookmarkedIds = new Set(savedPrograms.map((p) => p.kilavuzKodu));
-
-  const handleToggleBookmark = (program) => {
-    if (bookmarkedIds.has(program.kilavuzKodu)) {
-      setSavedPrograms(savedPrograms.filter((p) => p.kilavuzKodu !== program.kilavuzKodu));
-    } else {
-      setSavedPrograms([...savedPrograms, program]);
-    }
-  };
-
-  const handleRemoveBookmark = (code) => {
-    setSavedPrograms(savedPrograms.filter((p) => p.kilavuzKodu !== code));
-  };
-
-  const handleClearAll = () => {
-    setSavedPrograms([]);
-  };
-
-  const handleOpenProgramDetails = (code) => {
-    setSelectedProgramCode(code);
-  };
+  const {
+    savedPrograms,
+    bookmarkedIds,
+    toggleBookmark,
+    removeBookmark,
+    clearAllBookmarks,
+  } = useBookmarks();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Top Navigation Bar */}
+      {/* Navigation */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -58,51 +34,65 @@ export default function App() {
         onOpenDrawer={() => setIsDrawerOpen(true)}
       />
 
-      {/* Main App Workspace */}
+      {/* Main Workspace */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 space-y-6">
         {activeTab === 'explorer' && (
-          <OverviewTab
-            onSelectProgram={handleOpenProgramDetails}
-            onToggleBookmark={handleToggleBookmark}
+          <ProgramExplorerTab
+            onSelectProgram={setSelectedProgramCode}
+            onSelectUniversity={setSelectedUniName}
+            onToggleBookmark={toggleBookmark}
             bookmarkedIds={bookmarkedIds}
           />
         )}
 
-        {activeTab === 'compare' && <ComparatorTab />}
+        {activeTab === 'compare' && (
+          <UniComparatorTab onSelectUniversity={setSelectedUniName} />
+        )}
 
-        {activeTab === 'trends' && <TrendsTab selectedProgramCode={selectedProgramCode} />}
+        {activeTab === 'trends' && (
+          <RankTrendsTab selectedProgramCode={selectedProgramCode} />
+        )}
 
         {activeTab === 'wizard' && (
-          <WizardTab
-            onSelectProgram={handleOpenProgramDetails}
-            onToggleBookmark={handleToggleBookmark}
+          <PreferenceWizardTab
+            onSelectProgram={setSelectedProgramCode}
+            onToggleBookmark={toggleBookmark}
             bookmarkedIds={bookmarkedIds}
           />
         )}
       </main>
 
       {/* Footer */}
-      <footer className="glass-panel border-t border-slate-800/80 py-4 px-8 text-center text-xs text-slate-500">
-        <p>YÖK ATLAS + YKS Analytics Dashboard © 2026 • Powered by Scraped YÖK ATLAS API Data & Kaggle Admissions Intelligence</p>
-      </footer>
+      <Footer />
 
-      {/* Details Modal */}
+      {/* Program Details Modal */}
       {selectedProgramCode && (
         <ProgramModal
           programCode={selectedProgramCode}
           onClose={() => setSelectedProgramCode(null)}
-          onToggleBookmark={handleToggleBookmark}
+          onToggleBookmark={toggleBookmark}
           isBookmarked={bookmarkedIds.has(selectedProgramCode)}
         />
       )}
 
-      {/* Preference Drawer */}
+      {/* University Detail Modal showing all departments */}
+      {selectedUniName && (
+        <UniversityDetailModal
+          uniName={selectedUniName}
+          onClose={() => setSelectedUniName(null)}
+          onSelectProgram={setSelectedProgramCode}
+          onToggleBookmark={toggleBookmark}
+          bookmarkedIds={bookmarkedIds}
+        />
+      )}
+
+      {/* Preference List Drawer */}
       <PreferenceDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         savedPrograms={savedPrograms}
-        onRemoveBookmark={handleRemoveBookmark}
-        onClearAll={handleClearAll}
+        onRemoveBookmark={removeBookmark}
+        onClearAll={clearAllBookmarks}
       />
     </div>
   );

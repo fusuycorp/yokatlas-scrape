@@ -95,6 +95,76 @@ def get_universities(search: Optional[str] = None):
     return {"universities": rows}
 
 
+@app.get("/api/universities/{uni_name}/departments")
+def get_university_departments(uni_name: str):
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT 
+            universiteAdi,
+            universiteTuru,
+            ilAdi,
+            COUNT(*) as total_programs,
+            COALESCE(SUM(kontenjan), 0) as total_quota,
+            COALESCE(SUM(prof), 0) as total_prof,
+            COALESCE(SUM(doc), 0) as total_doc,
+            COALESCE(SUM(dou), 0) as total_dou,
+            COALESCE(SUM(arGor), 0) as total_argor,
+            AVG(CASE WHEN basariSirasi IS NOT NULL AND basariSirasi > 0 THEN basariSirasi END) as avg_basari_sirasi
+        FROM programs_2026
+        WHERE universiteAdi = ?
+        GROUP BY universiteAdi
+    """, (uni_name,))
+
+    summary = c.fetchone()
+    if not summary:
+        c.execute("""
+            SELECT 
+                universiteAdi,
+                universiteTuru,
+                ilAdi,
+                COUNT(*) as total_programs,
+                COALESCE(SUM(kontenjan), 0) as total_quota,
+                COALESCE(SUM(prof), 0) as total_prof,
+                COALESCE(SUM(doc), 0) as total_doc,
+                COALESCE(SUM(dou), 0) as total_dou,
+                COALESCE(SUM(arGor), 0) as total_argor,
+                AVG(CASE WHEN basariSirasi IS NOT NULL AND basariSirasi > 0 THEN basariSirasi END) as avg_basari_sirasi
+            FROM programs_2026
+            WHERE universiteAdi LIKE ?
+            GROUP BY universiteAdi
+        """, (f"%{uni_name}%",))
+        summary = c.fetchone()
+
+    if not summary:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"University '{uni_name}' not found.")
+
+    summary_dict = dict(summary)
+    actual_uni_name = summary_dict["universiteAdi"]
+
+    c.execute("""
+        SELECT 
+            kilavuzKodu, osymKilavuzId, universiteAdi, universiteTuru, ilAdi,
+            fymkAdi, birimAdi, puanTuru, bursOraniAdi, kontenjan,
+            basariSirasi, minPuan, minBasariSirasiKosul, kosul_ids_extracted,
+            prof, doc, dou, arGor, akreditasyon, akreditasyonAck
+        FROM programs_2026
+        WHERE universiteAdi = ?
+        ORDER BY basariSirasi IS NULL, basariSirasi ASC, birimAdi ASC
+    """, (actual_uni_name,))
+
+    departments = [dict(r) for r in c.fetchall()]
+    conn.close()
+
+    return {
+        "university": summary_dict,
+        "departments": departments,
+        "total": len(departments)
+    }
+
+
 @app.get("/api/programs")
 def get_programs(
     search: Optional[str] = None,
@@ -290,10 +360,178 @@ def get_program_trends(program_code: int):
 
     conn.close()
 
+    # Build annual data map across 2019-2026
+    yearly_map = {}
+
+    for h in history:
+        yr = int(h["year"])
+        yearly_map[yr] = {
+            "year": yr,
+            "rank": h.get("final_rank_012"),
+            "score": h.get("final_score_012"),
+            "quota": h.get("total_quota"),
+            "enrolled": h.get("total_enrolled"),
+            "demand_per_quota": h.get("demand_per_quota"),
+            "total_preferences": h.get("total_preferences"),
+        }
+
+    # Add/Update 2026 entry from 2026 program scraper data
+    if 2026 not in yearly_map:
+        yearly_map[2026] = {
+            "year": 2026,
+            "rank": prog_dict.get("basariSirasi"),
+            "score": prog_dict.get("minPuan"),
+            "quota": prog_dict.get("kontenjan"),
+            "enrolled": None,
+            "demand_per_quota": None,
+            "total_preferences": None,
+        }
+    else:
+        if yearly_map[2026].get("rank") is None:
+            yearly_map[2026]["rank"] = prog_dict.get("basariSirasi")
+        if yearly_map[2026].get("score") is None:
+            yearly_map[2026]["score"] = prog_dict.get("minPuan")
+        if yearly_map[2026].get("quota") is None:
+            yearly_map[2026]["quota"] = prog_dict.get("kontenjan")
+
+    sorted_years = sorted(yearly_map.keys())
+
+    yoy_comparisons = []
+    for i, yr in enumerate(sorted_years):
+        curr = yearly_map[yr]
+        if i == 0:
+            yoy_comparisons.append({
+                "year": yr,
+                "prev_year": None,
+                "rank": curr["rank"],
+                "score": curr["score"],
+                "quota": curr["quota"],
+                "enrolled": curr["enrolled"],
+                "rank_delta": None,
+                "rank_pct_change": None,
+                "score_delta": None,
+                "score_pct_change": None,
+                "quota_delta": None,
+                "quota_pct_change": None,
+                "enrolled_delta": None,
+                "enrolled_pct_change": None,
+            })
+        else:
+            prev_yr = sorted_years[i - 1]
+            prev = yearly_map[prev_yr]
+
+            # Rank delta (lower numerical rank is better/more selective, so negative delta means improved rank position)
+            r_curr = curr["rank"]
+            r_prev = prev["rank"]
+            if r_curr is not None and r_prev is not None:
+                rank_delta = int(r_curr - r_prev)
+                rank_pct = round(((r_curr - r_prev) / r_prev) * 100, 2) if r_prev > 0 else 0.0
+            else:
+                rank_delta = None
+                rank_pct = None
+
+            # Score delta
+            s_curr = curr["score"]
+            s_prev = prev["score"]
+            if s_curr is not None and s_prev is not None:
+                score_delta = round(s_curr - s_prev, 2)
+                score_pct = round(((s_curr - s_prev) / s_prev) * 100, 2) if s_prev > 0 else 0.0
+            else:
+                score_delta = None
+                score_pct = None
+
+            # Quota delta
+            q_curr = curr["quota"]
+            q_prev = prev["quota"]
+            if q_curr is not None and q_prev is not None:
+                quota_delta = int(q_curr - q_prev)
+                quota_pct = round(((q_curr - q_prev) / q_prev) * 100, 2) if q_prev > 0 else 0.0
+            else:
+                quota_delta = None
+                quota_pct = None
+
+            # Enrolled delta
+            e_curr = curr["enrolled"]
+            e_prev = prev["enrolled"]
+            if e_curr is not None and e_prev is not None:
+                enrolled_delta = int(e_curr - e_prev)
+                enrolled_pct = round(((e_curr - e_prev) / e_prev) * 100, 2) if e_prev > 0 else 0.0
+            else:
+                enrolled_delta = None
+                enrolled_pct = None
+
+            yoy_comparisons.append({
+                "year": yr,
+                "prev_year": prev_yr,
+                "rank": r_curr,
+                "score": s_curr,
+                "quota": q_curr,
+                "enrolled": e_curr,
+                "rank_delta": rank_delta,
+                "rank_pct_change": rank_pct,
+                "score_delta": score_delta,
+                "score_pct_change": score_pct,
+                "quota_delta": quota_delta,
+                "quota_pct_change": quota_pct,
+                "enrolled_delta": enrolled_delta,
+                "enrolled_pct_change": enrolled_pct,
+            })
+
+    # Summary YoY Deltas (for cards)
+    latest_comp = None
+    for comp in reversed(yoy_comparisons):
+        if comp.get("prev_year") is not None and comp.get("rank_delta") is not None:
+            latest_comp = comp
+            break
+
+    if not latest_comp and len(yoy_comparisons) > 1:
+        latest_comp = yoy_comparisons[-1]
+
+    earliest = yoy_comparisons[0] if yoy_comparisons else None
+    latest = yoy_comparisons[-1] if yoy_comparisons else None
+
+    total_rank_delta = None
+    total_rank_pct = None
+    total_score_delta = None
+    total_score_pct = None
+    total_quota_delta = None
+    total_quota_pct = None
+
+    if earliest and latest and earliest["year"] != latest["year"]:
+        if latest["rank"] is not None and earliest["rank"] is not None:
+            total_rank_delta = int(latest["rank"] - earliest["rank"])
+            total_rank_pct = round(((latest["rank"] - earliest["rank"]) / earliest["rank"]) * 100, 2) if earliest["rank"] > 0 else 0.0
+
+        if latest["score"] is not None and earliest["score"] is not None:
+            total_score_delta = round(latest["score"] - earliest["score"], 2)
+            total_score_pct = round(((latest["score"] - earliest["score"]) / earliest["score"]) * 100, 2) if earliest["score"] > 0 else 0.0
+
+        if latest["quota"] is not None and earliest["quota"] is not None:
+            total_quota_delta = int(latest["quota"] - earliest["quota"])
+            total_quota_pct = round(((latest["quota"] - earliest["quota"]) / earliest["quota"]) * 100, 2) if earliest["quota"] > 0 else 0.0
+
+    yoy_deltas = {
+        "latest_comparison": latest_comp,
+        "overall_trajectory": {
+            "earliest_year": earliest["year"] if earliest else None,
+            "latest_year": latest["year"] if latest else None,
+            "earliest_rank": earliest["rank"] if earliest else None,
+            "latest_rank": latest["rank"] if latest else None,
+            "total_rank_delta": total_rank_delta,
+            "total_rank_pct_change": total_rank_pct,
+            "total_score_delta": total_score_delta,
+            "total_score_pct_change": total_score_pct,
+            "total_quota_delta": total_quota_delta,
+            "total_quota_pct_change": total_quota_pct,
+        }
+    }
+
     return {
         "program": prog_dict,
         "history": history,
-        "net_stats": net_stats
+        "net_stats": net_stats,
+        "yoy_comparisons": yoy_comparisons,
+        "yoy_deltas": yoy_deltas,
     }
 
 
