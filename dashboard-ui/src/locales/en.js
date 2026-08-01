@@ -126,6 +126,10 @@ export const en = {
     asstProfs: 'Asst. Profs',
     researchAsst: 'Research Asst',
     thresholdTitle: 'Official YÖK Threshold Requirement',
+    rankTrends: 'Rank Trends',
+    yoyChanges: 'Year-over-Year Changes',
+    yoyTable: 'Comparative YoY Table',
+    netStats: 'Enrolled Student Net Stats',
   },
   universityModal: {
     title: '{uniName} - All Departments',

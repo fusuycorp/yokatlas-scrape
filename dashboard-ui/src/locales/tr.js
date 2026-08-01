@@ -126,6 +126,10 @@ export const tr = {
     asstProfs: 'Dr. Öğr. Üyesi',
     researchAsst: 'Araştırma Görevlileri',
     thresholdTitle: 'Resmi YÖK Baraj Şartı',
+    rankTrends: 'Sıralama Trendleri',
+    yoyChanges: 'Yıllık Değişimler',
+    yoyTable: 'Karşılaştırmalı Değişim Tablosu',
+    netStats: 'Yerleşenlerin Net İstatistikleri',
   },
   universityModal: {
     title: '{uniName} - Tüm Bölüm ve Programlar',

@@ -1,21 +1,43 @@
 import React from 'react';
-import { X, Users, AlertTriangle, Bookmark } from 'lucide-react';
+import { X, Users, AlertTriangle, Bookmark, TrendingUp, LineChart, Table, Activity } from 'lucide-react';
 import { useTrends } from '../../../hooks/useTrends';
 import { useLanguage } from '../../../hooks/useLanguage';
 import { formatRank, formatScore } from '../../../utils/formatters';
 import { Spinner } from '../../ui/Spinner';
 import { Badge } from '../../ui/Badge';
+import { RankTrajectoryChart } from '../trends/RankTrajectoryChart';
+import { YoYDeltaCards } from '../trends/YoYDeltaCards';
+import { YoYComparisonTable } from '../trends/YoYComparisonTable';
+import { NetStatsTable } from '../trends/NetStatsTable';
 
 export function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmarked }) {
   const { data, loading } = useTrends(programCode);
   const { t } = useLanguage();
   const p = data?.program;
 
+  const chartData = data?.history
+    ? data.history.map((h) => ({
+        year: h.year,
+        rank: h.final_rank_012,
+        score: h.final_score_012,
+        quota: h.total_quota,
+      }))
+    : [];
+
+  if (data?.program?.basariSirasi) {
+    chartData.push({
+      year: 2026,
+      rank: data.program.basariSirasi,
+      score: data.program.minPuan,
+      quota: data.program.kontenjan,
+    });
+  }
+
   if (!programCode) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-      <div className="glass-panel w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 shadow-2xl p-6 space-y-5">
+      <div className="glass-panel w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 shadow-2xl p-6 space-y-5">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
@@ -109,6 +131,44 @@ export function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmar
                   <span>{t('modal.thresholdTitle')}</span>
                 </div>
                 <p>{p.minBasariSirasiKosul}</p>
+              </div>
+            )}
+
+            {data.history?.length > 0 && (
+              <div className="pt-6 space-y-6 border-t border-slate-800 mt-6">
+                <div className="space-y-3">
+                  <h4 className="font-bold text-slate-200 flex items-center gap-2">
+                    <LineChart className="w-4 h-4 text-indigo-400" />
+                    <span className="text-sm">{t('modal.rankTrends')}</span>
+                  </h4>
+                  <RankTrajectoryChart chartData={chartData} />
+                </div>
+                
+                <div className="space-y-3">
+                  <h4 className="font-bold text-slate-200 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                    <span className="text-sm">{t('modal.yoyChanges')}</span>
+                  </h4>
+                  <YoYDeltaCards yoyDeltas={data.yoy_deltas} />
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-bold text-slate-200 flex items-center gap-2">
+                    <Table className="w-4 h-4 text-cyan-400" />
+                    <span className="text-sm">{t('modal.yoyTable')}</span>
+                  </h4>
+                  <YoYComparisonTable yoyComparisons={data.yoy_comparisons} />
+                </div>
+              </div>
+            )}
+
+            {data.net_stats?.length > 0 && (
+              <div className="pt-6 space-y-3 border-t border-slate-800 mt-6">
+                <h4 className="font-bold text-slate-200 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-purple-400" />
+                  <span className="text-sm">{t('modal.netStats')}</span>
+                </h4>
+                <NetStatsTable netStats={data.net_stats} />
               </div>
             )}
           </div>
