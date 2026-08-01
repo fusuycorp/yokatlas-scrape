@@ -31,7 +31,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: registry.bogazici.app/budok/uniatlas
+          images: registry.bogazici.app/budok/yokatlas-scrape
           tags: |
             type=raw,value=latest
             type=sha,format=long
@@ -56,7 +56,7 @@ jobs:
         env:
           DOKPLOY_URL: ${{ secrets.DOKPLOY_URL || 'https://dokploy.bogazici.app' }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
-          DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID || 'uniatlas-compose-id' }}
+          DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID || 'Kju2NchaKx3r7o_O3GSKS' }}
         run: |
           if [ -z "$DOKPLOY_API_KEY" ]; then
             echo "::error::DOKPLOY_API_KEY secret is not configured."

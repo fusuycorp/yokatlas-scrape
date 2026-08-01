@@ -1,24 +1,23 @@
 version: '3.8'
 
 services:
-  uniatlas:
-    image: ${IMAGE_TAG:-registry.bogazici.app/budok/uniatlas:latest}
+  app:
+    image: ${APP_IMAGE:-registry.bogazici.app/budok/yokatlas-scrape:latest}
     environment:
       PORT: 8000
     networks:
-      - dokploy-network
+      - frontend_net
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/api/stats || exit 1"]
       interval: 20s
-      timeout: 5s
+      timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 30s
     deploy:
       replicas: 2
       update_config:
         parallelism: 1
         delay: 10s
-        order: start-first
       restart_policy:
         condition: on-failure
       placement:
@@ -26,18 +25,12 @@ services:
           - node.labels.type == tanri
       resources:
         reservations:
-          cpus: '0.50'
+          cpus: '0.25'
           memory: 512M
         limits:
-          cpus: '2.0'
+          cpus: '1.5'
           memory: 2G
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.uniatlas.rule=Host(`atlas.bogazici.app`)"
-        - "traefik.http.routers.uniatlas.entrypoints=websecure"
-        - "traefik.http.routers.uniatlas.tls.certresolver=letsencrypt"
-        - "traefik.http.services.uniatlas.loadbalancer.server.port=8000"
 
 networks:
-  dokploy-network:
+  frontend_net:
     external: true
