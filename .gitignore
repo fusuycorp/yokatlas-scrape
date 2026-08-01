@@ -30,6 +30,7 @@ env/
 .cache/
 output/*
 !output/.gitkeep
+!output/unified_dashboard.db.gz
 
 # Kaggle raw zip & download data
 kaggle_data/*

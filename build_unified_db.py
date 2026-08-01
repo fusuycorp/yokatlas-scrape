@@ -3,15 +3,50 @@ Data Integration Script: Merges 2026 YÖK ATLAS scraped data with Kaggle 2019-20
 into a unified SQLite database: output/unified_dashboard.db
 """
 
-import sqlite3
+import gzip
 from pathlib import Path
+import shutil
+import sqlite3
 import pandas as pd
+
+
+def check_db_needs_decompression(db_path: Path) -> bool:
+    if not db_path.exists() or db_path.stat().st_size == 0:
+        return True
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='programs_2026'")
+        if cursor.fetchone()[0] == 0:
+            conn.close()
+            return True
+        cursor.execute("SELECT count(*) FROM programs_2026")
+        count = cursor.fetchone()[0]
+        conn.close()
+        return count == 0
+    except Exception:
+        return True
+
+
+def decompress_db_if_needed(db_path: Path, db_gz_path: Path):
+    if check_db_needs_decompression(db_path):
+        if db_gz_path.exists():
+            print(f"Decompressing {db_gz_path} to {db_path}...")
+            with gzip.open(db_gz_path, "rb") as f_in:
+                with open(db_path, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            print("Decompression complete.")
+        else:
+            print(f"Compressed database {db_gz_path} not found.")
 
 
 def build_unified_database():
     output_dir = Path("output")
     output_dir.mkdir(parents=True, exist_ok=True)
     db_path = output_dir / "unified_dashboard.db"
+    db_gz_path = output_dir / "unified_dashboard.db.gz"
+
+    decompress_db_if_needed(db_path, db_gz_path)
 
     print("Opening SQLite connection to unified_dashboard.db...")
     conn = sqlite3.connect(db_path)
@@ -135,6 +170,10 @@ def build_unified_database():
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_net_code ON net_stats_history(program_code);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_net_year ON net_stats_history(year);")
+
+    cursor.execute("SELECT COUNT(*) FROM programs_2026")
+    prog_count = cursor.fetchone()[0]
+    print(f"Total programs in 'programs_2026': {prog_count}")
 
     conn.commit()
     conn.close()
