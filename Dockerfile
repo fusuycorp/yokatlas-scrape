@@ -1,12 +1,12 @@
-# Stage 1: Build React Frontend
-FROM node:22-alpine AS frontend-builder
+# Stage 1: Build React Frontend with Bun (No Node)
+FROM oven/bun:1-alpine AS frontend-builder
 WORKDIR /app/dashboard-ui
 COPY dashboard-ui/package*.json ./
-RUN npm ci
+RUN bun install
 COPY dashboard-ui/ ./
-RUN npm run build
+RUN bun run build
 
-# Stage 2: Python Runtime & Application
+# Stage 2: Python Runtime with uv
 FROM python:3.12-slim
 
 WORKDIR /app
