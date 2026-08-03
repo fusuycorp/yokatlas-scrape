@@ -1,0 +1,9 @@
+node_modules
+kaggle_data/
+.git
+.venv
+dashboard-ui/node_modules
+dashboard-ui/dist
+output/*.csv
+*.pyc
+__pycache__

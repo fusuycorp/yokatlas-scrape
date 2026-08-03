@@ -21,11 +21,10 @@ RUN uv sync --frozen --no-cache --no-dev
 
 # Copy application source code & data generator scripts
 COPY server.py user_agents.py build_unified_db.py scraper.py exporter.py ./
-COPY output/ /app/output/
-COPY kaggle_data/ /app/kaggle_data/
+COPY output/unified_dashboard.db.gz /app/output/
 
 # Ensure unified SQLite database exists
-RUN uv run python build_unified_db.py
+RUN uv run python build_unified_db.py && rm -f output/unified_dashboard.db.gz
 
 # Copy built static frontend assets from stage 1
 COPY --from=frontend-builder /app/dashboard-ui/dist /app/dashboard-ui/dist

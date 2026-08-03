@@ -41,11 +41,12 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: false
+          outputs: type=image,push=true,compression=zstd,compression-level=3,force-compression=true
 
   deploy:
     name: Trigger Dokploy Redeployment
