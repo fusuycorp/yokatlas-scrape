@@ -213,12 +213,24 @@ def get_programs(
         params.append(city)
 
     if score_type:
-        conditions.append("puanTuru = ?")
-        params.append(score_type)
+        st_list = [s.strip() for s in score_type.split(",") if s.strip()]
+        if len(st_list) == 1:
+            conditions.append("puanTuru = ?")
+            params.append(st_list[0])
+        elif len(st_list) > 1:
+            placeholders = ",".join("?" for _ in st_list)
+            conditions.append(f"puanTuru IN ({placeholders})")
+            params.extend(st_list)
 
     if uni_type:
-        conditions.append("universiteTuru = ?")
-        params.append(uni_type)
+        ut_list = [u.strip() for u in uni_type.split(",") if u.strip()]
+        if len(ut_list) == 1:
+            conditions.append("universiteTuru = ?")
+            params.append(ut_list[0])
+        elif len(ut_list) > 1:
+            placeholders = ",".join("?" for _ in ut_list)
+            conditions.append(f"universiteTuru IN ({placeholders})")
+            params.extend(ut_list)
 
     if min_rank is not None:
         conditions.append("basariSirasi >= ?")

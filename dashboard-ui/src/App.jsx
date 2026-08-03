@@ -3,7 +3,7 @@ import { useBookmarks } from './hooks/useBookmarks';
 import { Navbar } from './components/features/common/Navbar';
 import { Footer } from './components/features/common/Footer';
 import { ProgramModal } from './components/features/common/ProgramModal';
-import { UniversityDetailModal } from './components/features/university/UniversityDetailModal';
+import { UniversityPage } from './components/features/university/UniversityPage';
 import { ProgramExplorerTab } from './components/features/explorer/ProgramExplorerTab';
 import { UniComparatorTab } from './components/features/comparator/UniComparatorTab';
 import { RankTrendsTab } from './components/features/trends/RankTrendsTab';
@@ -28,37 +28,52 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* Navigation */}
       <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        activeTab={selectedUniName ? 'university' : activeTab}
+        setActiveTab={(tab) => {
+          setSelectedUniName(null);
+          setActiveTab(tab);
+        }}
         savedCount={savedPrograms.length}
         onOpenDrawer={() => setIsDrawerOpen(true)}
       />
 
       {/* Main Workspace */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 space-y-6">
-        {activeTab === 'explorer' && (
-          <ProgramExplorerTab
-            onSelectProgram={setSelectedProgramCode}
-            onSelectUniversity={setSelectedUniName}
-            onToggleBookmark={toggleBookmark}
-            bookmarkedIds={bookmarkedIds}
-          />
-        )}
-
-        {activeTab === 'compare' && (
-          <UniComparatorTab onSelectUniversity={setSelectedUniName} />
-        )}
-
-        {activeTab === 'trends' && (
-          <RankTrendsTab selectedProgramCode={selectedProgramCode} />
-        )}
-
-        {activeTab === 'wizard' && (
-          <PreferenceWizardTab
+        {selectedUniName ? (
+          <UniversityPage
+            uniName={selectedUniName}
+            onBack={() => setSelectedUniName(null)}
             onSelectProgram={setSelectedProgramCode}
             onToggleBookmark={toggleBookmark}
             bookmarkedIds={bookmarkedIds}
           />
+        ) : (
+          <>
+            {activeTab === 'explorer' && (
+              <ProgramExplorerTab
+                onSelectProgram={setSelectedProgramCode}
+                onSelectUniversity={setSelectedUniName}
+                onToggleBookmark={toggleBookmark}
+                bookmarkedIds={bookmarkedIds}
+              />
+            )}
+
+            {activeTab === 'compare' && (
+              <UniComparatorTab onSelectUniversity={setSelectedUniName} />
+            )}
+
+            {activeTab === 'trends' && (
+              <RankTrendsTab selectedProgramCode={selectedProgramCode} />
+            )}
+
+            {activeTab === 'wizard' && (
+              <PreferenceWizardTab
+                onSelectProgram={setSelectedProgramCode}
+                onToggleBookmark={toggleBookmark}
+                bookmarkedIds={bookmarkedIds}
+              />
+            )}
+          </>
         )}
       </main>
 
@@ -72,17 +87,6 @@ export default function App() {
           onClose={() => setSelectedProgramCode(null)}
           onToggleBookmark={toggleBookmark}
           isBookmarked={bookmarkedIds.has(selectedProgramCode)}
-        />
-      )}
-
-      {/* University Detail Modal showing all departments */}
-      {selectedUniName && (
-        <UniversityDetailModal
-          uniName={selectedUniName}
-          onClose={() => setSelectedUniName(null)}
-          onSelectProgram={setSelectedProgramCode}
-          onToggleBookmark={toggleBookmark}
-          bookmarkedIds={bookmarkedIds}
         />
       )}
 

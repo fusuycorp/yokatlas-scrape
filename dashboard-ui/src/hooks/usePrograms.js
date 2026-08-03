@@ -15,6 +15,7 @@ export function usePrograms(initialFilters = {}) {
   const [uniType, setUniType] = useState(initialFilters.uniType || '');
   const [sortBy, setSortBy] = useState(initialFilters.sortBy || 'basariSirasi');
   const [sortDir, setSortDir] = useState(initialFilters.sortDir || 'ASC');
+  const [limit, setLimit] = useState(initialFilters.limit || PAGINATION_DEFAULTS.LIMIT || 25);
 
   useEffect(() => {
     let isMounted = true;
@@ -23,7 +24,7 @@ export function usePrograms(initialFilters = {}) {
     uniatlasService
       .getPrograms({
         page,
-        limit: PAGINATION_DEFAULTS.LIMIT,
+        limit,
         sort_by: sortBy,
         sort_dir: sortDir,
         search,
@@ -48,7 +49,7 @@ export function usePrograms(initialFilters = {}) {
     return () => {
       isMounted = false;
     };
-  }, [page, search, scoreType, uniType, sortBy, sortDir]);
+  }, [page, limit, search, scoreType, uniType, sortBy, sortDir]);
 
   const toggleSort = (col) => {
     if (sortBy === col) {
@@ -76,5 +77,7 @@ export function usePrograms(initialFilters = {}) {
     sortBy,
     sortDir,
     toggleSort,
+    limit,
+    setLimit,
   };
 }

@@ -25,6 +25,8 @@ export function ProgramExplorerTab({ onSelectProgram, onSelectUniversity, onTogg
     uniType,
     setUniType,
     toggleSort,
+    limit,
+    setLimit,
   } = usePrograms();
 
   return (
@@ -74,6 +76,11 @@ export function ProgramExplorerTab({ onSelectProgram, onSelectUniversity, onTogg
         uniType={uniType}
         onUniTypeChange={(val) => {
           setUniType(val);
+          setPage(1);
+        }}
+        limit={limit}
+        onLimitChange={(val) => {
+          setLimit(val);
           setPage(1);
         }}
         totalCount={totalCount}
