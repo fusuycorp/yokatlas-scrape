@@ -25,7 +25,7 @@ export default function App() {
   } = useBookmarks();
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen app-root flex flex-col font-sans">
       {/* Navigation */}
       <Navbar
         activeTab={selectedUniName ? 'university' : activeTab}

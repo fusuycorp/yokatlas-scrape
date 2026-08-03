@@ -42,11 +42,20 @@ html.light body {
   @apply bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white;
 }
 
+.app-root {
+  @apply bg-slate-950 text-slate-100;
+}
+
+html.light .app-root {
+  @apply bg-slate-50 text-slate-900;
+}
+
 html.light .glass-panel {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
 
 html.light .glass-card {
@@ -68,20 +77,53 @@ html.light ::-webkit-scrollbar-thumb:hover {
 }
 
 /* Force some generic light styles to clean up hardcoded dark colors */
+html.light .bg-slate-950,
 html.light .bg-slate-900, 
 html.light .bg-slate-900\/80, 
 html.light .bg-slate-800, 
 html.light .bg-slate-800\/80 {
-  @apply bg-white border-slate-200 text-slate-800;
+  @apply bg-white border-slate-200;
 }
+
 html.light .text-slate-400 {
   @apply text-slate-500;
 }
-html.light .text-white:not(.bg-indigo-600):not(.bg-indigo-500):not(.bg-gradient-to-tr):not(.bg-gradient-to-r) {
-  @apply text-slate-900;
+
+html.light .text-white:not(.bg-indigo-600):not(.bg-indigo-500):not(.bg-gradient-to-tr):not(.bg-gradient-to-r),
+html.light .text-slate-100,
+html.light .text-slate-200,
+html.light .text-slate-300 {
+  @apply text-slate-800;
 }
+
 html.light .border-slate-800, 
 html.light .border-slate-800\/80, 
 html.light .border-slate-700 {
   @apply border-slate-200;
+}
+
+/* Inputs, selects, and table rows */
+html.light input,
+html.light select,
+html.light textarea {
+  @apply bg-white border-slate-300 text-slate-900 placeholder:text-slate-400;
+}
+
+html.light tr:hover td {
+  @apply bg-slate-50;
+}
+
+/* Ensure buttons/badges retain high contrast */
+html.light .bg-indigo-600,
+html.light .bg-indigo-500 {
+  @apply text-white;
+}
+html.light .text-indigo-400 {
+  @apply text-indigo-700;
+}
+html.light .text-emerald-400 {
+  @apply text-emerald-700;
+}
+html.light .text-purple-400 {
+  @apply text-purple-700;
 }
