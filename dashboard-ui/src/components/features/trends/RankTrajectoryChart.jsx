@@ -18,8 +18,16 @@ export function RankTrajectoryChart({ chartData }) {
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
             <XAxis dataKey="year" stroke="#94a3b8" />
-            <YAxis stroke="#94a3b8" reversed domain={['dataMin - 1000', 'dataMax + 1000']} />
-            <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }} />
+            <YAxis
+              stroke="#94a3b8"
+              reversed
+              domain={[0, 'auto']}
+              tickFormatter={(val) => (val === 0 ? '0' : val.toLocaleString('tr-TR'))}
+            />
+            <Tooltip
+              contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
+              formatter={(value) => [value ? value.toLocaleString('tr-TR') : '—', t('trends.cutoffRankLine')]}
+            />
             <Line
               type="monotone"
               dataKey="rank"
