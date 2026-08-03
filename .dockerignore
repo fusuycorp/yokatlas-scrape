@@ -1,9 +1,8 @@
 node_modules
-kaggle_data/
-.git
 .venv
-dashboard-ui/node_modules
-dashboard-ui/dist
+kaggle_data/
 output/*.csv
-*.pyc
+.git
 __pycache__
+dashboard-ui/node_modules
+*.pyc

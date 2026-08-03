@@ -6,34 +6,24 @@ RUN bun install
 COPY dashboard-ui/ ./
 RUN bun run build
 
-# Stage 2: Python Runtime with uv
-FROM python:3.12-slim
+# Stage 2: Python Runtime
+FROM python:3.12-alpine
 
 WORKDIR /app
 
-# Install uv package manager and curl for health checks
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+# Install ONLY lightweight runtime packages
+RUN pip install --no-cache-dir fastapi "uvicorn[standard]"
 
-# Copy dependencies manifest and sync virtualenv
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-cache --no-dev
+# Copy minimal files
+COPY server.py ./
+COPY output/unified_dashboard.db.gz ./output/
+COPY --from=frontend-builder /app/dashboard-ui/dist ./dashboard-ui/dist
 
-# Copy application source code & data generator scripts
-COPY server.py user_agents.py build_unified_db.py scraper.py exporter.py ./
-COPY output/unified_dashboard.db.gz /app/output/
-
-# Copy built static frontend assets from stage 1
-COPY --from=frontend-builder /app/dashboard-ui/dist /app/dashboard-ui/dist
-
-# Set up non-root user for security hardening
-RUN useradd -m -s /bin/bash appuser && chown -R appuser:appuser /app
+# Set up non-root user
+RUN adduser -D appuser && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000
-
 ENV PORT=8000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8000/api/stats || exit 1
 
-CMD ["uv", "run", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
