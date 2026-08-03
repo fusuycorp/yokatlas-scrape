@@ -30,6 +30,10 @@ RUN uv run python build_unified_db.py
 # Copy built static frontend assets from stage 1
 COPY --from=frontend-builder /app/dashboard-ui/dist /app/dashboard-ui/dist
 
+# Set up non-root user for security hardening
+RUN useradd -m -s /bin/bash appuser && chown -R appuser:appuser /app
+USER appuser
+
 EXPOSE 8000
 
 ENV PORT=8000
