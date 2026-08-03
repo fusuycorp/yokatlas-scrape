@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import { uniatlasService } from '../api/uniatlasService';
 import { PAGINATION_DEFAULTS } from '../constants/config';
 
+// Module-level cache to persist state across unmounts
+const globalFiltersCache = {
+  page: PAGINATION_DEFAULTS.PAGE,
+  search: '',
+  scoreType: '',
+  uniType: '',
+  sortBy: 'basariSirasi',
+  sortDir: 'ASC',
+  limit: PAGINATION_DEFAULTS.LIMIT || 25,
+};
+
 export function usePrograms(initialFilters = {}) {
   const [programs, setPrograms] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -9,13 +20,24 @@ export function usePrograms(initialFilters = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [page, setPage] = useState(initialFilters.page || PAGINATION_DEFAULTS.PAGE);
-  const [search, setSearch] = useState(initialFilters.search || '');
-  const [scoreType, setScoreType] = useState(initialFilters.scoreType || '');
-  const [uniType, setUniType] = useState(initialFilters.uniType || '');
-  const [sortBy, setSortBy] = useState(initialFilters.sortBy || 'basariSirasi');
-  const [sortDir, setSortDir] = useState(initialFilters.sortDir || 'ASC');
-  const [limit, setLimit] = useState(initialFilters.limit || PAGINATION_DEFAULTS.LIMIT || 25);
+  const [page, setPage] = useState(initialFilters.page || globalFiltersCache.page);
+  const [search, setSearch] = useState(initialFilters.search || globalFiltersCache.search);
+  const [scoreType, setScoreType] = useState(initialFilters.scoreType || globalFiltersCache.scoreType);
+  const [uniType, setUniType] = useState(initialFilters.uniType || globalFiltersCache.uniType);
+  const [sortBy, setSortBy] = useState(initialFilters.sortBy || globalFiltersCache.sortBy);
+  const [sortDir, setSortDir] = useState(initialFilters.sortDir || globalFiltersCache.sortDir);
+  const [limit, setLimit] = useState(initialFilters.limit || globalFiltersCache.limit);
+
+  // Update global cache whenever state changes
+  useEffect(() => {
+    globalFiltersCache.page = page;
+    globalFiltersCache.search = search;
+    globalFiltersCache.scoreType = scoreType;
+    globalFiltersCache.uniType = uniType;
+    globalFiltersCache.sortBy = sortBy;
+    globalFiltersCache.sortDir = sortDir;
+    globalFiltersCache.limit = limit;
+  }, [page, search, scoreType, uniType, sortBy, sortDir, limit]);
 
   useEffect(() => {
     let isMounted = true;
