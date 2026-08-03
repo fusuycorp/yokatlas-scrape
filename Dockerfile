@@ -7,20 +7,21 @@ COPY dashboard-ui/ ./
 RUN bun run build
 
 # Stage 2: Python Runtime
-FROM python:3.12-alpine
+FROM python:3.12-slim
 
 WORKDIR /app
 
+# Set up non-root user first
+RUN useradd -m -s /bin/bash appuser
+
 # Install ONLY lightweight runtime packages
-RUN pip install --no-cache-dir fastapi "uvicorn[standard]"
+RUN pip install --no-cache-dir fastapi uvicorn
 
-# Copy minimal files
-COPY server.py ./
-COPY output/unified_dashboard.db.gz ./output/
-COPY --from=frontend-builder /app/dashboard-ui/dist ./dashboard-ui/dist
+# Copy minimal files with proper ownership to avoid chown layer bloat
+COPY --chown=appuser:appuser server.py ./
+COPY --chown=appuser:appuser output/unified_dashboard.db.gz ./output/
+COPY --chown=appuser:appuser --from=frontend-builder /app/dashboard-ui/dist ./dashboard-ui/dist
 
-# Set up non-root user
-RUN adduser -D appuser && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000
