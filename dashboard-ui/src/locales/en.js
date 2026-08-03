@@ -36,6 +36,8 @@ export const en = {
     loading: 'Loading programs...',
     empty: 'No programs matched your filters.',
     pageInfo: 'Page {page} of {totalPages}',
+    perPage: '{count} / Page',
+    page: 'Page',
   },
   comparator: {
     title: 'University Head-to-Head Comparator',
@@ -138,7 +140,9 @@ export const en = {
     error: 'Failed to load university details.',
     searchPlaceholder: 'Search department or program name...',
     allScoreTypes: 'All Score Types',
+    totalPrograms: 'Total Programs',
     totalQuota: 'Total Quota',
+    totalFaculty: 'Total Faculty',
     avgRank: 'Avg Cutoff Rank',
     academicStaff: 'Academic Staff',
     professors: 'Prof',
@@ -155,10 +159,13 @@ export const en = {
     colActions: 'Actions',
     noDepartments: 'No departments matched your criteria.',
     viewDetails: 'Details',
+    filterScoreType: 'Score Type',
+    backToExplorer: 'Back to Explorer',
   },
   common: {
     loading: 'Loading...',
     tr: 'TR',
     en: 'EN',
+    accredited: 'Accredited',
   },
 };

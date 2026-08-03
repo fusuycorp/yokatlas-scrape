@@ -200,9 +200,16 @@ def get_programs(
     params = []
 
     if search:
-        conditions.append("(TR_NORM(birimAdi) LIKE ? OR TR_NORM(universiteAdi) LIKE ? OR TR_NORM(fymkAdi) LIKE ?)")
-        search_norm = f"%{tr_normalize(search)}%"
-        params.extend([search_norm, search_norm, search_norm])
+        search_norm = tr_normalize(search)
+        c.execute("PRAGMA table_info(programs_2026)")
+        columns = [row[1] for row in c.fetchall()]
+        if "search_text_norm" in columns:
+            conditions.append("search_text_norm LIKE ?")
+            params.append(f"%{search_norm}%")
+        else:
+            conditions.append("(TR_NORM(birimAdi) LIKE ? OR TR_NORM(universiteAdi) LIKE ? OR TR_NORM(fymkAdi) LIKE ?)")
+            search_param = f"%{search_norm}%"
+            params.extend([search_param, search_param, search_param])
 
     if university:
         conditions.append("universiteAdi = ?")

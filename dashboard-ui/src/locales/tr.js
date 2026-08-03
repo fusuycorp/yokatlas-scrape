@@ -36,6 +36,8 @@ export const tr = {
     loading: 'Programlar yükleniyor...',
     empty: 'Filtrelerinize uygun program bulunamadı.',
     pageInfo: 'Sayfa {page} / {totalPages}',
+    perPage: '{count} / Sayfa',
+    page: 'Sayfa',
   },
   comparator: {
     title: 'Üniversite Birebir Karşılaştırma',
@@ -138,7 +140,9 @@ export const tr = {
     error: 'Üniversite detayları yüklenemedi.',
     searchPlaceholder: 'Bölüm veya program adı ara...',
     allScoreTypes: 'Tüm Puan Türleri',
+    totalPrograms: 'Toplam Program',
     totalQuota: 'Toplam Kontenjan',
+    totalFaculty: 'Toplam Akademisyen',
     avgRank: 'Ort. Taban Sıra',
     academicStaff: 'Akademik Kadro',
     professors: 'Prof',
@@ -155,10 +159,13 @@ export const tr = {
     colActions: 'İşlemler',
     noDepartments: 'Kriterlere uygun bölüm bulunamadı.',
     viewDetails: 'Detaylar',
+    filterScoreType: 'Puan Türü',
+    backToExplorer: 'Keşfet Sayfasına Dön',
   },
   common: {
     loading: 'Yükleniyor...',
     tr: 'TR',
     en: 'EN',
+    accredited: 'Akredite',
   },
 };

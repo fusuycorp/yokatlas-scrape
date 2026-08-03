@@ -10,6 +10,21 @@ import sqlite3
 import pandas as pd
 
 
+def tr_normalize(text):
+    if not isinstance(text, str):
+        return ""
+    if not text:
+        return ""
+    tr_map = str.maketrans({
+        "ç": "c", "Ç": "c",
+        "ğ": "g", "Ğ": "g",
+        "ı": "i", "I": "i", "İ": "i", "i": "i",
+        "ö": "o", "Ö": "o", "ş": "s", "Ş": "s",
+        "ü": "u", "Ü": "u"
+    })
+    return text.translate(tr_map).lower()
+
+
 def check_db_needs_decompression(db_path: Path) -> bool:
     if not db_path.exists() or db_path.stat().st_size == 0:
         return True
@@ -61,6 +76,11 @@ def build_unified_database():
         df_conditions = pd.read_sql_query("SELECT * FROM conditions", s_conn)
         s_conn.close()
 
+        df_2026['search_text_norm'] = df_2026.apply(
+            lambda row: tr_normalize(" ".join([str(x) for x in [row.get('universiteAdi'), row.get('birimAdi'), row.get('fymkAdi'), row.get('ilAdi')] if pd.notnull(x) and str(x).strip()])),
+            axis=1
+        )
+
         df_2026.to_sql("programs_2026", conn, if_exists="replace", index=False)
         df_conditions.to_sql("conditions_lookup", conn, if_exists="replace", index=False)
         print(f"Loaded {len(df_2026)} programs into 'programs_2026'")
@@ -88,7 +108,8 @@ def build_unified_database():
                 dou INTEGER DEFAULT 0,
                 arGor INTEGER DEFAULT 0,
                 akreditasyon TEXT,
-                akreditasyonAck TEXT
+                akreditasyonAck TEXT,
+                search_text_norm TEXT
             )
         """)
         cursor.execute("""
@@ -170,6 +191,8 @@ def build_unified_database():
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_net_code ON net_stats_history(program_code);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_net_year ON net_stats_history(year);")
+
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_p2026_search_norm ON programs_2026(search_text_norm);")
 
     cursor.execute("SELECT COUNT(*) FROM programs_2026")
     prog_count = cursor.fetchone()[0]

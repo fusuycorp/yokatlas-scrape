@@ -1,14 +1,15 @@
 import React from 'react';
-import { GraduationCap, GitCompare, LineChart, Compass, Bookmark } from 'lucide-react';
+import { GraduationCap, GitCompare, LineChart, Compass, Bookmark, Sun, Moon } from 'lucide-react';
 import { useLanguage } from '../../../hooks/useLanguage';
+import { useTheme } from '../../../hooks/useTheme';
 
 export function Navbar({ activeTab, setActiveTab, savedCount, onOpenDrawer }) {
   const { language, setLanguage, t } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
 
   const tabs = [
     { id: 'explorer', label: t('nav.explorer'), icon: Compass },
     { id: 'compare', label: t('nav.compare'), icon: GitCompare },
-    { id: 'trends', label: t('nav.trends'), icon: LineChart },
     { id: 'wizard', label: t('nav.wizard'), icon: GraduationCap },
   ];
 
@@ -53,8 +54,17 @@ export function Navbar({ activeTab, setActiveTab, savedCount, onOpenDrawer }) {
           })}
         </nav>
 
-        {/* Actions (Language Switcher + Draft Drawer) */}
+        {/* Actions (Language Switcher + Theme Toggle + Draft Drawer) */}
         <div className="flex items-center gap-3">
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/80 transition-all flex items-center justify-center shadow-sm"
+            title="Toggle Theme"
+          >
+            {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+          </button>
+
           {/* Language Switcher */}
           <div className="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
             <button

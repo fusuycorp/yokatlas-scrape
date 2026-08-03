@@ -67,10 +67,10 @@ export function ProgramFilterToolbar({
         <div className="flex items-center gap-4 w-full md:w-auto md:ml-auto">
           <Select
             options={[
-              { value: 10, label: `10 / ${t('explorer.page', 'Sayfa')}` },
-              { value: 25, label: `25 / ${t('explorer.page', 'Sayfa')}` },
-              { value: 50, label: `50 / ${t('explorer.page', 'Sayfa')}` },
-              { value: 100, label: `100 / ${t('explorer.page', 'Sayfa')}` }
+              { value: 10, label: t('explorer.perPage', { count: 10 }) },
+              { value: 25, label: t('explorer.perPage', { count: 25 }) },
+              { value: 50, label: t('explorer.perPage', { count: 50 }) },
+              { value: 100, label: t('explorer.perPage', { count: 100 }) }
             ]}
             value={limit}
             onChange={(e) => onLimitChange(Number(e.target.value))}

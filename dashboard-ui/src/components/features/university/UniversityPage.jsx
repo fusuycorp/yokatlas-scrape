@@ -69,7 +69,7 @@ export function UniversityPage({
                   ? t('explorer.stateUni')
                   : university?.universiteTuru === 'VAKIF'
                   ? t('explorer.foundationUni')
-                  : university?.universiteTuru || 'Devlet'}
+                  : university?.universiteTuru || t('explorer.stateUni')}
               </Badge>
               {university?.ilAdi && (
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400">
@@ -157,7 +157,7 @@ export function UniversityPage({
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder={t('universityModal.searchDeptPlaceholder')}
+                  placeholder={t('universityModal.searchPlaceholder')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 text-sm bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
@@ -196,7 +196,7 @@ export function UniversityPage({
                     onClick={() => toggleSort('birimAdi')}
                   >
                     <div className="flex items-center gap-1">
-                      <span>{t('universityModal.colDepartment')}</span>
+                      <span>{t('universityModal.colDept')}</span>
                       <ArrowUpDown className="w-3 h-3 text-slate-500" />
                     </div>
                   </th>
@@ -279,7 +279,7 @@ export function UniversityPage({
                             )}
                             {dept.akreditasyon ? (
                               <span className="text-[10px] text-emerald-400 font-semibold px-1 rounded bg-emerald-500/10">
-                                Akredite
+                                {t('common.accredited')}
                               </span>
                             ) : null}
                           </div>
