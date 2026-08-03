@@ -40,7 +40,12 @@ def tr_normalize(text):
 
 def get_db():
     if not DB_PATH.exists():
-        raise HTTPException(status_code=500, detail="Database file output/unified_dashboard.db not found. Please run build_unified_db.py.")
+        gz_path = Path("output/unified_dashboard.db.gz")
+        if gz_path.exists():
+            from build_unified_db import decompress_db_if_needed
+            decompress_db_if_needed(DB_PATH, gz_path)
+        else:
+            raise HTTPException(status_code=500, detail="Database file output/unified_dashboard.db not found. Please run build_unified_db.py.")
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.create_function("TR_NORM", 1, tr_normalize)
