@@ -19,7 +19,7 @@ export function Badge({ children, variant = 'indigo', className = '' }) {
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border ${variants[variant] || variants.indigo} ${className}`}
+      className={`Badge inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border ${variants[variant] || variants.indigo} ${className}`}
     >
       {children}
     </span>

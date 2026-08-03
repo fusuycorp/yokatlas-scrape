@@ -118,7 +118,8 @@ html.light .bg-indigo-600,
 html.light .bg-indigo-500 {
   @apply text-white;
 }
-html.light .text-indigo-400 {
+html.light .text-indigo-400,
+html.light .text-indigo-300 {
   @apply text-indigo-700;
 }
 html.light .text-emerald-400 {
@@ -127,3 +128,21 @@ html.light .text-emerald-400 {
 html.light .text-purple-400 {
   @apply text-purple-700;
 }
+
+html.light thead {
+  @apply bg-slate-100 text-slate-700 border-slate-200;
+}
+html.light tr {
+  @apply border-slate-200;
+}
+html.light td {
+  @apply border-slate-200 text-slate-700;
+}
+html.light button {
+  @apply border-slate-300;
+}
+html.light .Badge {
+  @apply border-slate-300;
+}
+
+@variant light (.light &);

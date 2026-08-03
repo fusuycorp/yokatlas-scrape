@@ -86,11 +86,11 @@ export function ProgramTable({
                     <td className="py-3 px-4">
                       <button
                         onClick={() => onSelectUniversity?.(p.universiteAdi)}
-                        className="font-semibold text-white hover:text-indigo-400 hover:underline text-left transition cursor-pointer"
+                        className="font-semibold text-white light:text-slate-900 hover:text-indigo-400 hover:light:text-indigo-600 hover:underline text-left transition cursor-pointer"
                       >
                         {p.universiteAdi}
                       </button>
-                      <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                      <div className="flex items-center gap-2 text-[11px] text-slate-400 light:text-slate-700 mt-0.5">
                         <Badge variant={p.universiteTuru === 'DEVLET' ? 'emerald' : 'purple'}>
                           {p.universiteTuru === 'DEVLET' ? t('explorer.stateUni') : p.universiteTuru === 'VAKIF' ? t('explorer.foundationUni') : p.universiteTuru}
                         </Badge>
@@ -98,9 +98,14 @@ export function ProgramTable({
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="font-medium text-slate-200">{p.birimAdi}</div>
+                      <button 
+                        onClick={() => onSelectProgram(p.kilavuzKodu)}
+                        className="font-medium text-slate-200 cursor-pointer hover:text-indigo-400 hover:underline text-left transition"
+                      >
+                        {p.birimAdi}
+                      </button>
                       {p.bursOraniAdi && (
-                        <span className="text-[10px] text-indigo-400 font-medium">
+                        <span className="text-[10px] text-indigo-400 font-medium block">
                           {p.bursOraniAdi}
                         </span>
                       )}

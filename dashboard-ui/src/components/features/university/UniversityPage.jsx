@@ -72,14 +72,14 @@ export function UniversityPage({
                   : university?.universiteTuru || t('explorer.stateUni')}
               </Badge>
               {university?.ilAdi && (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400">
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 light:text-slate-700">
                   <MapPin className="w-3.5 h-3.5 text-indigo-400" />
                   {university.ilAdi}
                 </span>
               )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white light:text-slate-900 flex items-center gap-3">
               <Building2 className="w-8 h-8 text-indigo-400 shrink-0" />
               <span>{uniName}</span>
             </h1>
@@ -265,9 +265,15 @@ export function UniversityPage({
                           </button>
                         </td>
                         <td className="py-2.5 px-3.5">
-                          <div className="font-medium text-slate-100 hover:text-indigo-300 transition">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setInspectProgramCode(dept.kilavuzKodu);
+                            }}
+                            className="font-medium text-slate-100 hover:text-indigo-400 hover:underline text-left transition cursor-pointer"
+                          >
                             {dept.birimAdi}
-                          </div>
+                          </button>
                           <div className="flex items-center gap-2 text-[11px] text-slate-400">
                             <span className="font-mono text-[10px] text-slate-500">
                               {dept.kilavuzKodu}

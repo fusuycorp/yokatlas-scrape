@@ -19,7 +19,7 @@ export function Button({
 
   const variants = {
     primary: 'bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white shadow-lg shadow-indigo-500/25',
-    secondary: 'bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30',
+    secondary: 'bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 light:bg-indigo-50 light:border-indigo-200 light:text-indigo-700 hover:light:bg-indigo-600 hover:light:text-white',
     ghost: 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700',
     danger: 'bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20',
   };

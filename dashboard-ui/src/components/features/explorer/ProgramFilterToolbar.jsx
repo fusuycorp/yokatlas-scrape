@@ -11,8 +11,8 @@ const TogglePill = ({ label, selected, onClick }) => (
     onClick={onClick}
     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
       selected 
-        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' 
-        : 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:bg-slate-800 hover:text-slate-300'
+        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30 light:bg-indigo-600 light:text-white light:border-indigo-600' 
+        : 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:bg-slate-800 hover:text-slate-300 light:bg-slate-100 light:border-slate-300 light:text-slate-700 hover:light:bg-slate-200'
     }`}
   >
     <div className={`w-3 h-3 rounded flex items-center justify-center border ${selected ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-slate-500'}`}>
