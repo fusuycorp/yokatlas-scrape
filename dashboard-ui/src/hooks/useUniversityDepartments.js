@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { uniatlasService } from '../api/uniatlasService';
+import { trIncludes } from '../utils/turkish';
 
 export function useUniversityDepartments(uniName) {
   const [university, setUniversity] = useState(null);
@@ -49,12 +50,11 @@ export function useUniversityDepartments(uniName) {
     let result = [...departments];
 
     if (search.trim()) {
-      const q = search.toLowerCase();
       result = result.filter(
         (d) =>
-          d.birimAdi?.toLowerCase().includes(q) ||
-          d.fymkAdi?.toLowerCase().includes(q) ||
-          d.kilavuzKodu?.toString().includes(q)
+          trIncludes(d.birimAdi, search) ||
+          trIncludes(d.fymkAdi, search) ||
+          d.kilavuzKodu?.toString().includes(search)
       );
     }
 

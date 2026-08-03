@@ -5,6 +5,7 @@ import { useLanguage } from '../../../hooks/useLanguage';
 import { Spinner } from '../../ui/Spinner';
 import { UniComparisonCards } from './UniComparisonCards';
 import { FacultyChart } from './FacultyChart';
+import { trIncludes } from '../../../utils/turkish';
 
 export function UniComparatorTab({ onSelectUniversity }) {
   const { allUnis, selectedUnis, comparisonData, loading, addUniversity, removeUniversity } = useCompare();
@@ -12,7 +13,7 @@ export function UniComparatorTab({ onSelectUniversity }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredUniOptions = allUnis.filter(
-    (u) => !selectedUnis.includes(u.universiteAdi) && u.universiteAdi.toLowerCase().includes(searchTerm.toLowerCase())
+    (u) => !selectedUnis.includes(u.universiteAdi) && trIncludes(u.universiteAdi, searchTerm)
   );
 
   return (

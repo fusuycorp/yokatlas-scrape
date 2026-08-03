@@ -25,11 +25,25 @@ app.add_middleware(
 )
 
 
+def tr_normalize(text):
+    if not text:
+        return ""
+    tr_map = str.maketrans({
+        "ç": "c", "Ç": "c",
+        "ğ": "g", "Ğ": "g",
+        "ı": "i", "I": "i", "İ": "i", "i": "i",
+        "ö": "o", "Ö": "o", "ş": "s", "Ş": "s",
+        "ü": "u", "Ü": "u"
+    })
+    return text.translate(tr_map).lower()
+
+
 def get_db():
     if not DB_PATH.exists():
         raise HTTPException(status_code=500, detail="Database file output/unified_dashboard.db not found. Please run build_unified_db.py.")
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.create_function("TR_NORM", 1, tr_normalize)
     return conn
 
 
@@ -83,8 +97,8 @@ def get_universities(search: Optional[str] = None):
     """
     params = []
     if search:
-        query += " WHERE universiteAdi LIKE ?"
-        params.append(f"%{search}%")
+        query += " WHERE TR_NORM(universiteAdi) LIKE ?"
+        params.append(f"%{tr_normalize(search)}%")
 
     query += " GROUP BY universiteAdi ORDER BY program_count DESC"
 
@@ -132,9 +146,9 @@ def get_university_departments(uni_name: str):
                 COALESCE(SUM(arGor), 0) as total_argor,
                 AVG(CASE WHEN basariSirasi IS NOT NULL AND basariSirasi > 0 THEN basariSirasi END) as avg_basari_sirasi
             FROM programs_2026
-            WHERE universiteAdi LIKE ?
+            WHERE TR_NORM(universiteAdi) LIKE ?
             GROUP BY universiteAdi
-        """, (f"%{uni_name}%",))
+        """, (f"%{tr_normalize(uni_name)}%",))
         summary = c.fetchone()
 
     if not summary:
@@ -186,8 +200,9 @@ def get_programs(
     params = []
 
     if search:
-        conditions.append("(birimAdi LIKE ? OR universiteAdi LIKE ? OR fymkAdi LIKE ?)")
-        params.extend([f"%{search}%", f"%{search}%", f"%{search}%"])
+        conditions.append("(TR_NORM(birimAdi) LIKE ? OR TR_NORM(universiteAdi) LIKE ? OR TR_NORM(fymkAdi) LIKE ?)")
+        search_norm = f"%{tr_normalize(search)}%"
+        params.extend([search_norm, search_norm, search_norm])
 
     if university:
         conditions.append("universiteAdi = ?")
@@ -349,14 +364,50 @@ def get_program_trends(program_code: int):
     """, (program_code,))
     history = [dict(r) for r in c.fetchall()]
 
-    # Kaggle Net stats history
-    c.execute("""
-        SELECT year, lesson_name, exam_type, average_net, max_questions
-        FROM net_stats_history
-        WHERE program_code = ?
-        ORDER BY year ASC, exam_type ASC, lesson_name ASC
-    """, (program_code,))
-    net_stats = [dict(r) for r in c.fetchall()]
+    # Fallback: if program code changed across years (e.g. Boğaziçi YBS), match by university & department name
+    if not history:
+        uni_name = prog_dict.get("universiteAdi", "").split("(")[0].strip()
+        dept_name = prog_dict.get("birimAdi", "").split("(")[0].strip()
+
+        c.execute("""
+            SELECT DISTINCT program_code
+            FROM admissions_history
+            WHERE TR_NORM(university_name) LIKE ? AND TR_NORM(department_name) LIKE ?
+        """, (f"%{tr_normalize(uni_name)}%", f"%{tr_normalize(dept_name)}%"))
+        matched_codes = [row["program_code"] for row in c.fetchall()]
+
+        if matched_codes:
+            placeholders = ",".join("?" for _ in matched_codes)
+            c.execute(f"""
+                SELECT 
+                    year, total_quota, total_enrolled, male, female,
+                    final_score_012, final_rank_012, initial_placement_rate,
+                    total_preferences, demand_per_quota, avg_preference_rank,
+                    top_1_pref_count, top_3_pref_count, placed_pref_rank_avg
+                FROM admissions_history
+                WHERE program_code IN ({placeholders})
+                ORDER BY year ASC
+            """, matched_codes)
+            history = [dict(r) for r in c.fetchall()]
+
+            c.execute(f"""
+                SELECT year, lesson_name, exam_type, average_net, max_questions
+                FROM net_stats_history
+                WHERE program_code IN ({placeholders})
+                ORDER BY year ASC, exam_type ASC, lesson_name ASC
+            """, matched_codes)
+            net_stats = [dict(r) for r in c.fetchall()]
+        else:
+            net_stats = []
+    else:
+        # Kaggle Net stats history for primary code
+        c.execute("""
+            SELECT year, lesson_name, exam_type, average_net, max_questions
+            FROM net_stats_history
+            WHERE program_code = ?
+            ORDER BY year ASC, exam_type ASC, lesson_name ASC
+        """, (program_code,))
+        net_stats = [dict(r) for r in c.fetchall()]
 
     conn.close()
 
