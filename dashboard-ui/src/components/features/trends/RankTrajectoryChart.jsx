@@ -20,7 +20,6 @@ export function RankTrajectoryChart({ chartData }) {
             <XAxis dataKey="year" stroke="#94a3b8" />
             <YAxis
               stroke="#94a3b8"
-              reversed
               domain={[0, 'auto']}
               tickFormatter={(val) => (val === 0 ? '0' : val.toLocaleString('tr-TR'))}
             />
