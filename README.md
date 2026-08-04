@@ -1,6 +1,6 @@
 # UniAtlas (YÖK ATLAS Scraper & YKS University Analytics Platform)
 
-[![Build & Deploy](https://github.com/fusuyfusuy/yokatlas-scrape/actions/workflows/deploy.yml/badge.svg)](https://github.com/fusuyfusuy/yokatlas-scrape/actions/workflows/deploy.yml)
+[![Build & Deploy](https://github.com/fusuyfusuy/uniyok-atlas/actions/workflows/deploy.yml/badge.svg)](https://github.com/fusuyfusuy/uniyok-atlas/actions/workflows/deploy.yml)
 
 **UniAtlas** (`atlas.bogazici.app`) is an intelligence platform and web dashboard combining real-time **2026 YÖK ATLAS scraped program data** (21,493 programs) with **2019–2024 Kaggle YKS university admissions analytics** (128,000+ historical entries & 1,000,000+ subject net stats).
 
@@ -27,8 +27,8 @@ Requirements: [uv](https://github.com/astral-sh/uv) (Python 3.12+) and Node.js 2
 
 ```bash
 # Clone the repository
-git clone git@github.com:fusuyfusuy/yokatlas-scrape.git
-cd yokatlas-scrape
+git clone git@github.com:fusuyfusuy/uniyok-atlas.git
+cd uniyok-atlas
 
 # Install Python dependencies
 uv sync

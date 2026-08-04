@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   uniatlas:
-    image: ${IMAGE_TAG:-registry.bogazici.app/budok/uniatlas:latest}
+    image: ${IMAGE_TAG:-registry.bogazici.app/budok/uniyok-atlas:latest}
     environment:
       PORT: 8000
     networks:

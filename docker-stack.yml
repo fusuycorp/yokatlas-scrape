@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: ${APP_IMAGE:-registry.bogazici.app/budok/yokatlas-scrape:latest}
+    image: ${APP_IMAGE:-registry.bogazici.app/budok/uniyok-atlas:latest}
     environment:
       PORT: 8000
     networks:

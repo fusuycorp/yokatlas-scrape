@@ -6,7 +6,7 @@ This directory contains configuration files and deployment instructions for host
 
 - **App Name**: `uniatlas`
 - **Domain**: `atlas.bogazici.app`
-- **Container Registry**: `registry.bogazici.app/budok/uniatlas:latest`
+- **Container Registry**: `registry.bogazici.app/budok/uniyok-atlas:latest`
 - **Orchestration**: Docker Swarm via Dokploy Stacks
 - **Reverse Proxy**: Traefik with automated Let's Encrypt TLS certificates
 

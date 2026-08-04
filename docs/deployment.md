@@ -49,7 +49,7 @@ version: '3.8'
 
 services:
   app:
-    image: ${APP_IMAGE:-registry.bogazici.app/budok/yokatlas-scrape:latest}
+    image: ${APP_IMAGE:-registry.bogazici.app/budok/uniyok-atlas:latest}
     environment:
       PORT: 8000
     healthcheck:
@@ -117,7 +117,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: registry.bogazici.app/budok/yokatlas-scrape
+          images: registry.bogazici.app/budok/uniyok-atlas
           tags: |
             type=raw,value=latest
             type=sha,format=long
