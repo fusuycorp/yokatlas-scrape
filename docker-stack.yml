@@ -30,6 +30,12 @@ services:
         limits:
           cpus: '1.5'
           memory: 2G
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.yokatlas.rule=Host(`atlas.bogazici.app`)"
+        - "traefik.http.routers.yokatlas.entrypoints=websecure"
+        - "traefik.http.routers.yokatlas.tls.certresolver=letsencrypt"
+        - "traefik.http.services.yokatlas.loadbalancer.server.port=8000"
 
 networks:
   frontend_net:
