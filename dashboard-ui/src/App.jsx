@@ -97,6 +97,7 @@ export default function App() {
         savedPrograms={savedPrograms}
         onRemoveBookmark={removeBookmark}
         onClearAll={clearAllBookmarks}
+        onSelectProgram={setSelectedProgramCode}
       />
     </div>
   );

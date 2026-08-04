@@ -5,7 +5,7 @@ import { formatRank } from '../../../utils/formatters';
 import { useLanguage } from '../../../hooks/useLanguage';
 import { Button } from '../../ui/Button';
 
-export function PreferenceDrawer({ isOpen, onClose, savedPrograms, onRemoveBookmark, onClearAll }) {
+export function PreferenceDrawer({ isOpen, onClose, savedPrograms, onRemoveBookmark, onClearAll, onSelectProgram }) {
   const { t } = useLanguage();
 
   if (!isOpen) return null;
@@ -50,7 +50,12 @@ export function PreferenceDrawer({ isOpen, onClose, savedPrograms, onRemoveBookm
                     {idx + 1}
                   </span>
                   <div className="truncate">
-                    <h4 className="font-bold text-xs text-white truncate">{p.birimAdi}</h4>
+                    <button
+                      onClick={() => onSelectProgram?.(p.kilavuzKodu)}
+                      className="font-bold text-xs text-white truncate cursor-pointer hover:underline hover:text-indigo-400 text-left transition"
+                    >
+                      {p.birimAdi}
+                    </button>
                     <p className="text-[11px] text-slate-400 truncate">{p.universiteAdi}</p>
                     <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
                       <span className="font-semibold text-indigo-300">{p.puanTuru}</span>

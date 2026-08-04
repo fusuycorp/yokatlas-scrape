@@ -13,7 +13,12 @@ export function WizardCard({ program, onSelect, onToggleBookmark, isBookmarked }
           <span className="text-[10px] font-bold text-slate-400 uppercase">
             {program.universiteTuru === 'DEVLET' ? t('explorer.stateUni') : program.universiteTuru === 'VAKIF' ? t('explorer.foundationUni') : program.universiteTuru} • {program.ilAdi}
           </span>
-          <h4 className="font-bold text-xs text-white line-clamp-1">{program.birimAdi}</h4>
+          <button
+            onClick={() => onSelect(program.kilavuzKodu)}
+            className="font-bold text-xs text-white line-clamp-1 cursor-pointer hover:underline hover:text-indigo-400 text-left transition"
+          >
+            {program.birimAdi}
+          </button>
           <p className="text-[11px] text-slate-300 font-medium line-clamp-1">{program.universiteAdi}</p>
         </div>
 
