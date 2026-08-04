@@ -1,42 +1,35 @@
 version: '3.8'
 
 services:
-  app:
-    image: ${APP_IMAGE:-registry.bogazici.app/budok/uniyok-atlas:latest}
+  uniyok-atlas:
+    image: ${IMAGE_TAG:-registry.bogazici.app/budok/uniyok-atlas:latest}
     environment:
       PORT: 8000
     networks:
-      - frontend_net
+      - dokploy-network
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/api/stats || exit 1"]
-      interval: 20s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
     deploy:
       replicas: 2
       update_config:
-        parallelism: 1
-        delay: 10s
-      restart_policy:
-        condition: on-failure
+        order: start-first
       placement:
         constraints:
           - node.labels.type == tanri
       resources:
         reservations:
-          cpus: '0.25'
+          cpus: '0.50'
           memory: 512M
         limits:
-          cpus: '1.5'
+          cpus: '2.0'
           memory: 2G
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.yokatlas.rule=Host(`atlas.bogazici.app`)"
-        - "traefik.http.routers.yokatlas.entrypoints=websecure"
-        - "traefik.http.routers.yokatlas.tls.certresolver=letsencrypt"
-        - "traefik.http.services.yokatlas.loadbalancer.server.port=8000"
+        - traefik.enable=true
+        - traefik.http.routers.uniyok-atlas.rule=Host("atlas.bogazici.app")
+        - traefik.http.routers.uniyok-atlas.entrypoints=websecure
+        - traefik.http.routers.uniyok-atlas.tls.certresolver=letsencrypt
+        - traefik.http.services.uniyok-atlas.loadbalancer.server.port=8000
 
 networks:
-  frontend_net:
+  dokploy-network:
     external: true
