@@ -3,6 +3,8 @@ FastAPI Backend Engine for Turkish University Comparison & YKS Analytics Dashboa
 Queries output/unified_dashboard.db with high performance indexed SQLite queries.
 """
 
+import gzip
+import shutil
 import sqlite3
 from pathlib import Path
 from typing import Optional, List
@@ -38,14 +40,22 @@ def tr_normalize(text):
     return text.translate(tr_map).lower()
 
 
+def decompress_db_if_needed(db_path: Path, gz_path: Path):
+    if not db_path.exists() or db_path.stat().st_size == 0:
+        if gz_path.exists():
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            with gzip.open(gz_path, "rb") as f_in:
+                with open(db_path, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+
+
 def get_db():
     if not DB_PATH.exists():
         gz_path = Path("output/unified_dashboard.db.gz")
         if gz_path.exists():
-            from build_unified_db import decompress_db_if_needed
             decompress_db_if_needed(DB_PATH, gz_path)
         else:
-            raise HTTPException(status_code=500, detail="Database file output/unified_dashboard.db not found. Please run build_unified_db.py.")
+            raise HTTPException(status_code=500, detail="Database file output/unified_dashboard.db not found.")
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.create_function("TR_NORM", 1, tr_normalize)
