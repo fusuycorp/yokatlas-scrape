@@ -1,6 +1,6 @@
 # Production Deployment Guide: Docker Swarm & Dokploy
 
-This document details the production deployment pipeline for **UniAtlas** (`unilist.bogazici.app`) using Dokploy, Docker Swarm stacks, custom container registries, and GitHub Actions.
+This document details the production deployment pipeline for **UniAtlas** (`atlas.bogazici.app`) using Dokploy, Docker Swarm stacks, custom container registries, and GitHub Actions.
 
 ---
 
@@ -18,27 +18,33 @@ This document details the production deployment pipeline for **UniAtlas** (`unil
 
 ---
 
-## Environment & Registry Secrets
+## Domain & Registry Configuration
 
-To configure CI/CD deployment, add the following Repository Secrets in GitHub (**Settings > Secrets and variables > Actions**):
-
-| Secret Name | Value / Description | Required |
-| :--- | :--- | :---: |
-| `REGISTRY_USERNAME` | Username for `registry.bogazici.app` | **Yes** |
-| `REGISTRY_PASSWORD` | Access token / Password for `registry.bogazici.app` | **Yes** |
-| `DOKPLOY_API_KEY` | API Key generated in Dokploy Settings | **Yes** |
-| `DOKPLOY_URL` | `https://dokploy.bogazici.app` | Optional |
-| `DOKPLOY_COMPOSE_ID` | `XDOIv2PdTkrsjfzu5eSRH` | **Yes** |
+- **Domain**: `atlas.bogazici.app`
+- **Port**: `8000`
+- **Service Name**: `uniyok-atlas`
+- **Container Image**: `registry.bogazici.app/budok/uniyok-atlas:latest`
+- **Dokploy Stack ID**: `XDOIv2PdTkrsjfzu5eSRH`
 
 ---
 
-## Domain Configuration in Dokploy
+## ⚡ Deployment Guidelines & Best Practices
 
-- **Domain**: `unilist.bogazici.app`
-- **Port**: `8000`
-- **Service Name**: `app`
-- **HTTPS & SSL**: Enabled (`letsencrypt` cert resolver)
-- **Domain ID**: `apIeDqzvyR1y56Ekn0Tno`
+1. **Cloudflare 413 Payload Too Large Prevention**:
+   - Keep production Docker container images **< 25MB** and layer sizes **< 15MB**.
+   - Do **NOT** include heavy development/ETL dependencies (`pandas`, `pyarrow`, `openpyxl`) in production Docker runtime images.
+   - Store only the compressed database asset (`output/unified_dashboard.db.gz`, ~15MB) in the container layer. `server.py` auto-decompresses it in **0.1s** on initial container boot.
+
+2. **Container Healthcheck Safety**:
+   - `python:3.12-slim` base image does not include `curl` by default.
+   - Always install `curl` in `Dockerfile` AND use a Python standard library `urllib` fallback test in `docker-stack.yml`:
+     ```yaml
+     healthcheck:
+       test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/stats')\" || curl -f http://127.0.0.1:8000/api/stats || exit 1"]
+     ```
+
+3. **Dokploy Compose Domain Rules**:
+   - When modifying domains in the Dokploy UI, a **Redeploy / Sync** of the Compose stack is required so Dokploy injects updated Traefik labels into the running container tasks.
 
 ---
 
@@ -48,104 +54,36 @@ To configure CI/CD deployment, add the following Repository Secrets in GitHub (*
 version: '3.8'
 
 services:
-  app:
-    image: ${APP_IMAGE:-registry.bogazici.app/budok/uniyok-atlas:latest}
+  uniyok-atlas:
+    image: ${IMAGE_TAG:-registry.bogazici.app/budok/uniyok-atlas:latest}
     environment:
       PORT: 8000
+    networks:
+      - dokploy-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/api/stats || exit 1"]
-      interval: 20s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/stats')\" || curl -f http://127.0.0.1:8000/api/stats || exit 1"]
     deploy:
       replicas: 2
       update_config:
-        parallelism: 1
-        delay: 10s
-      restart_policy:
-        condition: on-failure
+        order: start-first
       placement:
         constraints:
           - node.labels.type == tanri
       resources:
         reservations:
-          cpus: '0.25'
+          cpus: '0.50'
           memory: 512M
         limits:
-          cpus: '1.5'
+          cpus: '2.0'
           memory: 2G
-```
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.uniyok-atlas.rule=Host("atlas.bogazici.app")
+        - traefik.http.routers.uniyok-atlas.entrypoints=websecure
+        - traefik.http.routers.uniyok-atlas.tls.certresolver=letsencrypt
+        - traefik.http.services.uniyok-atlas.loadbalancer.server.port=8000
 
----
-
-## GitHub Actions Automated Deployment Workflow
-
-The workflow file [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) automatically triggers upon pushes to `main`:
-
-```yaml
-name: Build, Push and Deploy UniAtlas (YÖK Atlas & YKS Analytics)
-
-on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '**.md'
-      - '.gitignore'
-  workflow_dispatch:
-
-jobs:
-  build-and-push:
-    name: Build & Push Container Image
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Custom Registry
-        uses: docker/login-action@v3
-        with:
-          registry: registry.bogazici.app
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
-
-      - name: Extract Metadata for Image
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: registry.bogazici.app/budok/uniyok-atlas
-          tags: |
-            type=raw,value=latest
-            type=sha,format=long
-
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy:
-    name: Trigger Dokploy Redeployment
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Dokploy Stack Redeployment
-        env:
-          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL || 'https://dokploy.bogazici.app' }}
-          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
-          DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID || 'XDOIv2PdTkrsjfzu5eSRH' }}
-        run: |
-          curl -f -s -S -X POST "$DOKPLOY_URL/api/compose.redeploy" \
-            -H "x-api-key: $DOKPLOY_API_KEY" \
-            -H "Content-Type: application/json" \
-            -d "{\"composeId\": \"$DOKPLOY_COMPOSE_ID\"}"
+networks:
+  dokploy-network:
+    external: true
 ```
