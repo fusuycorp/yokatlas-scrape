@@ -8,7 +8,7 @@ services:
     networks:
       - dokploy-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/api/stats || exit 1"]
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/stats')\" || curl -f http://127.0.0.1:8000/api/stats || exit 1"]
     deploy:
       replicas: 2
       update_config:

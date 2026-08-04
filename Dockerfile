@@ -14,7 +14,8 @@ WORKDIR /app
 # Set up non-root user first
 RUN useradd -m -s /bin/bash appuser
 
-# Install ONLY lightweight runtime packages
+# Install curl for health checks and lightweight runtime packages
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir fastapi uvicorn
 
 # Copy minimal files with proper ownership to avoid chown layer bloat
