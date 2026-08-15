@@ -5,13 +5,20 @@ import App from './App.jsx'
 import { LanguageProvider } from './hooks/useLanguage'
 import { ThemeProvider } from './hooks/useTheme'
 
+import { BrowserRouter } from 'react-router-dom'
+import { HelmetProvider } from 'react-helmet-async'
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ThemeProvider>
-      <LanguageProvider>
-        <App />
-      </LanguageProvider>
-    </ThemeProvider>
+    <HelmetProvider>
+      <BrowserRouter>
+        <ThemeProvider>
+          <LanguageProvider>
+            <App />
+          </LanguageProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </HelmetProvider>
   </StrictMode>,
 )
 

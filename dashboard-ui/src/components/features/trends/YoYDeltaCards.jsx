@@ -70,20 +70,20 @@ export function YoYDeltaCards({ yoyDeltas }) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
           <TrendingUp className="w-3.5 h-3.5" />
-          +{formatScore(scoreDelta)} pts (+{scorePct}%)
+          +{formatScore(scoreDelta)} {t('trends.ptsUnit')} (+{scorePct}%)
         </span>
       );
     } else if (scoreDelta < 0) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
           <TrendingDown className="w-3.5 h-3.5" />
-          {formatScore(scoreDelta)} pts ({scorePct}%)
+          {formatScore(scoreDelta)} {t('trends.ptsUnit')} ({scorePct}%)
         </span>
       );
     } else {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
-          <Minus className="w-3.5 h-3.5" /> 0.00 pts
+          <Minus className="w-3.5 h-3.5" /> 0.00 {t('trends.ptsUnit')}
         </span>
       );
     }
@@ -103,20 +103,20 @@ export function YoYDeltaCards({ yoyDeltas }) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
           <TrendingUp className="w-3.5 h-3.5" />
-          +{formatNumber(quotaDelta)} seats (+{quotaPct}%)
+          +{formatNumber(quotaDelta)} {t('trends.seatsUnit')} (+{quotaPct}%)
         </span>
       );
     } else if (quotaDelta < 0) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
           <TrendingDown className="w-3.5 h-3.5" />
-          {formatNumber(quotaDelta)} seats ({quotaPct}%)
+          {formatNumber(quotaDelta)} {t('trends.seatsUnit')} ({quotaPct}%)
         </span>
       );
     } else {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
-          <Minus className="w-3.5 h-3.5" /> Unchanged
+          <Minus className="w-3.5 h-3.5" /> {t('trends.unchanged')}
         </span>
       );
     }

@@ -15,6 +15,8 @@
     "lucide-react": "^1.28.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-helmet-async": "^2.0.5",
+    "react-router-dom": "^7.3.0",
     "recharts": "^3.10.1",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3"

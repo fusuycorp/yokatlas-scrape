@@ -37,7 +37,7 @@ export function YoYComparisonTable({ yoyComparisons }) {
               <th className="py-3 px-4">{t('trends.colScoreDelta')}</th>
               <th className="py-3 px-4">{t('trends.colQuotaDelta')}</th>
               <th className="py-3 px-4">{t('trends.colEnrolledDelta')}</th>
-              <th className="py-3 px-4">Status</th>
+              <th className="py-3 px-4">{t('trends.colStatus')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60">
@@ -117,7 +117,7 @@ export function YoYComparisonTable({ yoyComparisons }) {
                               : 'text-slate-500'
                           }`}
                         >
-                          {row.score_delta > 0 ? `+${formatScore(row.score_delta)}` : formatScore(row.score_delta)} pts
+                          {row.score_delta > 0 ? `+${formatScore(row.score_delta)}` : formatScore(row.score_delta)} {t('trends.ptsUnit')}
                         </span>
                       )}
                     </div>
@@ -137,7 +137,7 @@ export function YoYComparisonTable({ yoyComparisons }) {
                               : 'text-slate-500'
                           }`}
                         >
-                          {row.quota_delta > 0 ? `+${formatNumber(row.quota_delta)}` : formatNumber(row.quota_delta)} seats
+                          {row.quota_delta > 0 ? `+${formatNumber(row.quota_delta)}` : formatNumber(row.quota_delta)} {t('trends.seatsUnit')}
                         </span>
                       )}
                     </div>

@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 RUN pip install --no-cache-dir fastapi uvicorn
 
 # Copy minimal files with proper ownership to avoid chown layer bloat
+RUN mkdir -p /app/output && chown -R appuser:appuser /app
 COPY --chown=appuser:appuser server.py ./
 COPY --chown=appuser:appuser output/unified_dashboard.db.gz ./output/
 COPY --chown=appuser:appuser --from=frontend-builder /app/dashboard-ui/dist ./dashboard-ui/dist

@@ -6,9 +6,11 @@ Queries output/unified_dashboard.db with high performance indexed SQLite queries
 import gzip
 import shutil
 import sqlite3
+import re
 from pathlib import Path
 from typing import Optional, List
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Request
+from fastapi.responses import PlainTextResponse, Response, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -27,17 +29,63 @@ app.add_middleware(
 )
 
 
+_uni_slug_cache = {}
+
+def tr_lower(text: str) -> str:
+    if not text:
+        return ""
+    return text.replace("İ", "i").replace("I", "ı").lower()
+
+def title_turkish(text: str) -> str:
+    if not text:
+        return ""
+    words = tr_lower(text).split()
+    res = []
+    for w in words:
+        if w.startswith("i"):
+            res.append("İ" + w[1:])
+        elif w.startswith("ı"):
+            res.append("I" + w[1:])
+        else:
+            res.append(w.capitalize())
+    return " ".join(res)
+
+def slugify_turkish(text: str) -> str:
+    if not text:
+        return ""
+    text = tr_lower(text)
+    tr_map = str.maketrans({
+        "ç": "c", "ğ": "g", "ı": "i", "ö": "o", "ş": "s", "ü": "u"
+    })
+    text = text.translate(tr_map)
+    text = re.sub(r'[^a-z0-9]+', '-', text)
+    return text.strip('-')
+
+def get_uni_name_from_slug(slug: str) -> Optional[str]:
+    global _uni_slug_cache
+    if not _uni_slug_cache:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT DISTINCT universiteAdi FROM programs_2026")
+        for row in c.fetchall():
+            uni_name = row[0]
+            if uni_name:
+                _uni_slug_cache[slugify_turkish(uni_name)] = uni_name
+                clean_name = uni_name.split("(")[0].strip()
+                clean_slug = slugify_turkish(clean_name)
+                if clean_slug and clean_slug not in _uni_slug_cache:
+                    _uni_slug_cache[clean_slug] = uni_name
+        conn.close()
+    return _uni_slug_cache.get(slug)
+
 def tr_normalize(text):
     if not text:
         return ""
+    text = tr_lower(text)
     tr_map = str.maketrans({
-        "ç": "c", "Ç": "c",
-        "ğ": "g", "Ğ": "g",
-        "ı": "i", "I": "i", "İ": "i", "i": "i",
-        "ö": "o", "Ö": "o", "ş": "s", "Ş": "s",
-        "ü": "u", "Ü": "u"
+        "ç": "c", "ğ": "g", "ı": "i", "ö": "o", "ş": "s", "ü": "u"
     })
-    return text.translate(tr_map).lower()
+    return text.translate(tr_map)
 
 
 def decompress_db_if_needed(db_path: Path, gz_path: Path):
@@ -216,15 +264,8 @@ def get_programs(
 
     if search:
         search_norm = tr_normalize(search)
-        c.execute("PRAGMA table_info(programs_2026)")
-        columns = [row[1] for row in c.fetchall()]
-        if "search_text_norm" in columns:
-            conditions.append("search_text_norm LIKE ?")
-            params.append(f"%{search_norm}%")
-        else:
-            conditions.append("(TR_NORM(birimAdi) LIKE ? OR TR_NORM(universiteAdi) LIKE ? OR TR_NORM(fymkAdi) LIKE ?)")
-            search_param = f"%{search_norm}%"
-            params.extend([search_param, search_param, search_param])
+        conditions.append("search_text_norm LIKE ?")
+        params.append(f"%{search_norm}%")
 
     if university:
         conditions.append("universiteAdi = ?")
@@ -401,13 +442,28 @@ def get_program_trends(program_code: int):
     # Fallback: if program code changed across years (e.g. Boğaziçi YBS), match by university & department name
     if not history:
         uni_name = prog_dict.get("universiteAdi", "").split("(")[0].strip()
-        dept_name = prog_dict.get("birimAdi", "").split("(")[0].strip()
+        raw_dept = prog_dict.get("birimAdi", "").strip()
+        base_dept = raw_dept.split("(")[0].strip()
+        score_type = prog_dict.get("puanTuru")
 
-        c.execute("""
+        norm_dept = tr_normalize(raw_dept)
+        conditions = ["TR_NORM(university_name) LIKE ?", "TR_NORM(department_name) LIKE ?"]
+        params = [f"%{tr_normalize(uni_name)}%", f"%{tr_normalize(base_dept)}%"]
+
+        if "(ingilizce)" in norm_dept:
+            conditions.append("TR_NORM(department_name) LIKE ?")
+            params.append("%ingilizce%")
+
+        if score_type:
+            conditions.append("score_type = ?")
+            params.append(score_type)
+
+        where_clause = " AND ".join(conditions)
+        c.execute(f"""
             SELECT DISTINCT program_code
             FROM admissions_history
-            WHERE TR_NORM(university_name) LIKE ? AND TR_NORM(department_name) LIKE ?
-        """, (f"%{tr_normalize(uni_name)}%", f"%{tr_normalize(dept_name)}%"))
+            WHERE {where_clause}
+        """, params)
         matched_codes = [row["program_code"] for row in c.fetchall()]
 
         if matched_codes:
@@ -677,5 +733,148 @@ def preference_wizard(
 
 # Serve React build frontend files if output directory exists
 frontend_dist = Path("dashboard-ui/dist")
+
 if frontend_dist.exists():
-    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
+    # Mount static assets for direct loading
+    assets_dir = frontend_dist / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+@app.get("/robots.txt", response_class=PlainTextResponse)
+def get_robots_txt():
+    content = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Sitemap: https://atlas.bogazici.app/sitemap.xml\n"
+    )
+    return content
+
+@app.get("/sitemap.xml", response_class=Response)
+def sitemap_index():
+    xml_content = """<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+   <sitemap>
+      <loc>https://atlas.bogazici.app/sitemap-static.xml</loc>
+   </sitemap>
+   <sitemap>
+      <loc>https://atlas.bogazici.app/sitemap-universities.xml</loc>
+   </sitemap>
+   <sitemap>
+      <loc>https://atlas.bogazici.app/sitemap-programs.xml</loc>
+   </sitemap>
+</sitemapindex>"""
+    return Response(content=xml_content, media_type="application/xml")
+
+@app.get("/sitemap-static.xml", response_class=Response)
+def sitemap_static():
+    urls = ["/", "/karsilastir", "/trendler", "/tercih-sihirbazi"]
+    url_tags = "\n".join([f"  <url><loc>https://atlas.bogazici.app{url}</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>" for url in urls])
+    xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{url_tags}
+</urlset>"""
+    return Response(content=xml_content, media_type="application/xml")
+
+@app.get("/sitemap-universities.xml", response_class=Response)
+def sitemap_universities():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT DISTINCT universiteAdi FROM programs_2026")
+    urls = []
+    for row in c.fetchall():
+        uni_name = row[0]
+        if uni_name:
+            slug = slugify_turkish(uni_name)
+            urls.append(f"  <url><loc>https://atlas.bogazici.app/universite/{slug}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>")
+    conn.close()
+    xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{"\n".join(urls)}
+</urlset>"""
+    return Response(content=xml_content, media_type="application/xml")
+
+@app.get("/sitemap-programs.xml", response_class=Response)
+def sitemap_programs():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT kilavuzKodu FROM programs_2026 WHERE kilavuzKodu IS NOT NULL")
+    urls = []
+    for row in c.fetchall():
+        code = row[0]
+        urls.append(f"  <url><loc>https://atlas.bogazici.app/program/{code}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>")
+    conn.close()
+    xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{"\n".join(urls)}
+</urlset>"""
+    return Response(content=xml_content, media_type="application/xml")
+
+# Fallback route for SPA
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+def catch_all(request: Request, full_path: str):
+    # Static files fallback if they weren't matched (vite usually puts them in root or assets)
+    file_path = frontend_dist / full_path
+    if file_path.exists() and file_path.is_file():
+        from fastapi.responses import FileResponse
+        return FileResponse(file_path)
+
+    index_path = frontend_dist / "index.html"
+    if not index_path.exists():
+        return HTMLResponse("Frontend build not found.", status_code=404)
+        
+    with open(index_path, "r", encoding="utf-8") as f:
+        html = f.read()
+
+    title = "UniAtlas | YÖK ATLAS & YKS University Comparison"
+    description = "2026 YKS taban puanları, kontenjanları ve üniversite karşılaştırma platformu."
+    url = f"https://atlas.bogazici.app/{full_path}" if full_path else "https://atlas.bogazici.app/"
+    
+    if full_path.startswith("universite/"):
+        parts = full_path.split("/")
+        if len(parts) > 1:
+            slug = parts[1]
+            uni_name = get_uni_name_from_slug(slug)
+            if uni_name:
+                uni_name = title_turkish(uni_name)
+                title = f"{uni_name} Taban Puanları, Kontenjanları ve Bölümleri | UniAtlas"
+                description = f"{uni_name} güncel taban puanları, kontenjan bilgileri ve bölüm detayları."
+            
+    elif full_path.startswith("program/"):
+        parts = full_path.split("/")
+        if len(parts) > 1:
+            code = parts[1]
+            try:
+                conn = get_db()
+                c = conn.cursor()
+                c.execute("SELECT universiteAdi, birimAdi, puanTuru FROM programs_2026 WHERE kilavuzKodu = ?", (code,))
+                prog = c.fetchone()
+                conn.close()
+                if prog:
+                    uni_name, dept_name, score_type = prog
+                    uni_name = title_turkish(uni_name)
+                    dept_name = title_turkish(dept_name)
+                    title = f"{uni_name} {dept_name} ({score_type}) YKS Sıralama ve Puanı | UniAtlas"
+                    description = f"{uni_name} {dept_name} {score_type} puan türü başarı sıralaması ve güncel taban puanı."
+            except Exception:
+                pass
+
+    if "<title>" in html:
+        html = re.sub(r'<title>.*?</title>', f'<title>{title}</title>', html, count=1)
+    else:
+        html = html.replace("</head>", f"<title>{title}</title>\n</head>")
+
+    og_tags = f"""
+    <meta name="description" content="{description}" />
+    <link rel="canonical" href="{url}" />
+    <meta property="og:title" content="{title}" />
+    <meta property="og:description" content="{description}" />
+    <meta property="og:url" content="{url}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="UniAtlas" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="{title}" />
+    <meta name="twitter:description" content="{description}" />
+    """
+    html = html.replace("</head>", f"{og_tags}</head>")
+    
+    return HTMLResponse(content=html, status_code=200)
