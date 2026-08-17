@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-17T11:48:41.929405+00:00", "action": "add-umami-analytics", "summary": "Added Umami tracking script to dashboard index.html and rebuilt frontend dist", "files": ["dashboard-ui/index.html"], "branch": "main", "author": "devhax"}
