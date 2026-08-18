@@ -4,6 +4,7 @@ Queries output/unified_dashboard.db with high performance indexed SQLite queries
 """
 
 import gzip
+import json
 import shutil
 import sqlite3
 import re
@@ -12,12 +13,15 @@ from typing import Optional, List
 from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.responses import PlainTextResponse, Response, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 DB_PATH = Path("output/unified_dashboard.db")
 
 app = FastAPI(title="YÖK ATLAS & YKS University Comparison API", version="1.0.0")
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Enable CORS for frontend development
 app.add_middleware(
@@ -747,7 +751,7 @@ def get_robots_txt():
         "Allow: /\n"
         "Sitemap: https://atlas.bogazici.app/sitemap.xml\n"
     )
-    return content
+    return PlainTextResponse(content=content, headers={"Cache-Control": "public, max-age=3600"})
 
 @app.get("/sitemap.xml", response_class=Response)
 def sitemap_index():
@@ -763,7 +767,7 @@ def sitemap_index():
       <loc>https://atlas.bogazici.app/sitemap-programs.xml</loc>
    </sitemap>
 </sitemapindex>"""
-    return Response(content=xml_content, media_type="application/xml")
+    return Response(content=xml_content, media_type="application/xml", headers={"Cache-Control": "public, max-age=86400"})
 
 @app.get("/sitemap-static.xml", response_class=Response)
 def sitemap_static():
@@ -773,7 +777,7 @@ def sitemap_static():
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 {url_tags}
 </urlset>"""
-    return Response(content=xml_content, media_type="application/xml")
+    return Response(content=xml_content, media_type="application/xml", headers={"Cache-Control": "public, max-age=86400"})
 
 @app.get("/sitemap-universities.xml", response_class=Response)
 def sitemap_universities():
@@ -791,7 +795,7 @@ def sitemap_universities():
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 {"\n".join(urls)}
 </urlset>"""
-    return Response(content=xml_content, media_type="application/xml")
+    return Response(content=xml_content, media_type="application/xml", headers={"Cache-Control": "public, max-age=86400"})
 
 @app.get("/sitemap-programs.xml", response_class=Response)
 def sitemap_programs():
@@ -807,12 +811,11 @@ def sitemap_programs():
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 {"\n".join(urls)}
 </urlset>"""
-    return Response(content=xml_content, media_type="application/xml")
+    return Response(content=xml_content, media_type="application/xml", headers={"Cache-Control": "public, max-age=86400"})
 
-# Fallback route for SPA
+# Fallback route for SPA with rich SEO pre-rendering
 @app.get("/{full_path:path}", response_class=HTMLResponse)
 def catch_all(request: Request, full_path: str):
-    # Static files fallback if they weren't matched (vite usually puts them in root or assets)
     file_path = frontend_dist / full_path
     if file_path.exists() and file_path.is_file():
         from fastapi.responses import FileResponse
@@ -825,19 +828,162 @@ def catch_all(request: Request, full_path: str):
     with open(index_path, "r", encoding="utf-8") as f:
         html = f.read()
 
-    title = "UniAtlas | YÖK ATLAS & YKS University Comparison"
-    description = "2026 YKS taban puanları, kontenjanları ve üniversite karşılaştırma platformu."
+    title = "UniAtlas | YÖK ATLAS & YKS Üniversite Tercih ve Taban Puanları Analiz Platformu"
+    description = "2026 YKS taban puanları, kontenjanları, başarı sıralamaları ve üniversite karşılaştırma platformu."
     url = f"https://atlas.bogazici.app/{full_path}" if full_path else "https://atlas.bogazici.app/"
+    og_image = "https://atlas.bogazici.app/og-image.jpg"
     
-    if full_path.startswith("universite/"):
+    json_ld = {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "UniAtlas",
+        "url": "https://atlas.bogazici.app/",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://atlas.bogazici.app/?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    }
+
+    noscript_body = """
+      <div style="padding:2rem;max-width:1200px;margin:0 auto;font-family:sans-serif;line-height:1.6;">
+        <h1>UniAtlas - 2026 YKS Üniversite Tercih & Taban Puanları Analiz Platformu</h1>
+        <p>2026 YKS taban puanları, başarı sıralamaları, kontenjan verileri ve yapay zeka destekli üniversite tercih rehberliği platformu.</p>
+        <nav>
+          <ul>
+            <li><a href="https://atlas.bogazici.app/">Program Arama & Filtreleme</a></li>
+            <li><a href="https://atlas.bogazici.app/karsilastir">Üniversite Karşılaştırma</a></li>
+            <li><a href="https://atlas.bogazici.app/trendler">Sıralama Trendleri</a></li>
+            <li><a href="https://atlas.bogazici.app/tercih-sihirbazi">Tercih Sihirbazı</a></li>
+          </ul>
+        </nav>
+      </div>
+    """
+
+    if full_path == "karsilastir":
+        title = "Üniversite Karşılaştırma | UniAtlas"
+        description = "2026 YKS taban puanları, kontenjan ve akademik kadro verileri ile üniversiteleri yan yana karşılaştırın."
+        json_ld = {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Üniversite Karşılaştırma",
+            "url": url,
+            "description": description
+        }
+        noscript_body = f"""
+          <div style="padding:2rem;max-width:1200px;margin:0 auto;font-family:sans-serif;line-height:1.6;">
+            <h1>Üniversite Karşılaştırma | UniAtlas</h1>
+            <p>{description}</p>
+            <p><a href="https://atlas.bogazici.app/">&larr; Ana Sayfa</a></p>
+          </div>
+        """
+
+    elif full_path == "trendler":
+        title = "YKS Sıralama ve Puan Trendleri | UniAtlas"
+        description = "2019-2026 yılları arası üniversite bölümlerinin 2026 YKS taban puanları ve başarı sıralaması değişim trendleri."
+        json_ld = {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Sıralama Trendleri",
+            "url": url,
+            "description": description
+        }
+        noscript_body = f"""
+          <div style="padding:2rem;max-width:1200px;margin:0 auto;font-family:sans-serif;line-height:1.6;">
+            <h1>YKS Başarı Sıralaması ve Taban Puan Trendleri | UniAtlas</h1>
+            <p>{description}</p>
+            <p><a href="https://atlas.bogazici.app/">&larr; Ana Sayfa</a></p>
+          </div>
+        """
+
+    elif full_path == "tercih-sihirbazi":
+        title = "YKS Tercih Sihirbazı | UniAtlas"
+        description = "2026 YKS taban puanları ve sıralamanıza göre size en uygun üniversite ve bölümleri belirleyin."
+        json_ld = {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Tercih Sihirbazı",
+            "url": url,
+            "description": description
+        }
+        noscript_body = f"""
+          <div style="padding:2rem;max-width:1200px;margin:0 auto;font-family:sans-serif;line-height:1.6;">
+            <h1>YKS Tercih Sihirbazı | UniAtlas</h1>
+            <p>{description}</p>
+            <p><a href="https://atlas.bogazici.app/">&larr; Ana Sayfa</a></p>
+          </div>
+        """
+
+    elif full_path.startswith("universite/"):
         parts = full_path.split("/")
         if len(parts) > 1:
             slug = parts[1]
             uni_name = get_uni_name_from_slug(slug)
             if uni_name:
-                uni_name = title_turkish(uni_name)
-                title = f"{uni_name} Taban Puanları, Kontenjanları ve Bölümleri | UniAtlas"
-                description = f"{uni_name} güncel taban puanları, kontenjan bilgileri ve bölüm detayları."
+                uni_name_clean = title_turkish(uni_name)
+                title = f"{uni_name_clean} Taban Puanları, Kontenjanları ve Bölümleri | UniAtlas"
+                description = f"{uni_name_clean} 2026 YKS taban puanları, başarı sıralamaları, kontenjan ve bölüm detayları."
+                
+                try:
+                    conn = get_db()
+                    c = conn.cursor()
+                    c.execute("""
+                        SELECT ilAdi, universiteTuru, COUNT(*) as total_prog, COALESCE(SUM(kontenjan), 0) as total_quota
+                        FROM programs_2026 WHERE universiteAdi = ? GROUP BY universiteAdi
+                    """, (uni_name,))
+                    stat = c.fetchone()
+                    
+                    c.execute("""
+                        SELECT kilavuzKodu, birimAdi, puanTuru, basariSirasi, minPuan, kontenjan
+                        FROM programs_2026 WHERE universiteAdi = ?
+                        ORDER BY basariSirasi IS NULL, basariSirasi ASC LIMIT 30
+                    """, (uni_name,))
+                    dept_rows = [dict(r) for r in c.fetchall()]
+                    conn.close()
+
+                    city = stat["ilAdi"] if stat else ""
+                    uni_type = stat["universiteTuru"] if stat else ""
+                    total_progs = stat["total_prog"] if stat else len(dept_rows)
+                    
+                    json_ld = {
+                        "@context": "https://schema.org",
+                        "@graph": [
+                            {
+                                "@type": "CollegeOrUniversity",
+                                "name": uni_name_clean,
+                                "url": url,
+                                "address": {
+                                    "@type": "PostalAddress",
+                                    "addressLocality": city,
+                                    "addressCountry": "TR"
+                                }
+                            },
+                            {
+                                "@type": "BreadcrumbList",
+                                "itemListElement": [
+                                    {"@type": "ListItem", "position": 1, "name": "Ana Sayfa", "item": "https://atlas.bogazici.app/"},
+                                    {"@type": "ListItem", "position": 2, "name": uni_name_clean, "item": url}
+                                ]
+                            }
+                        ]
+                    }
+
+                    dept_items = "".join([
+                        f"<li><a href='https://atlas.bogazici.app/program/{d['kilavuzKodu']}'>{title_turkish(d['birimAdi'])} ({d['puanTuru']})</a> - Başarı Sırası: {d['basariSirasi'] or 'Dolmadı'}, Taban Puan: {d['minPuan'] or '-'}, Kontenjan: {d['kontenjan'] or '-'}</li>"
+                        for d in dept_rows
+                    ])
+
+                    noscript_body = f"""
+                      <div style="padding:2rem;max-width:1200px;margin:0 auto;font-family:sans-serif;line-height:1.6;">
+                        <h1>{uni_name_clean} Taban Puanları ve Bölümleri (2026 YKS)</h1>
+                        <p><strong>Tür:</strong> {uni_type} | <strong>Şehir:</strong> {city} | <strong>Toplam Program:</strong> {total_progs}</p>
+                        <p>{uni_name_clean} bünyesinde yer alan programların 2026 YKS taban puanları ve başarı sıralamaları:</p>
+                        <ul>{dept_items}</ul>
+                        <p><a href="https://atlas.bogazici.app/">&larr; Tüm Üniversiteler ve Programlar</a></p>
+                      </div>
+                    """
+                except Exception:
+                    pass
             
     elif full_path.startswith("program/"):
         parts = full_path.split("/")
@@ -846,15 +992,66 @@ def catch_all(request: Request, full_path: str):
             try:
                 conn = get_db()
                 c = conn.cursor()
-                c.execute("SELECT universiteAdi, birimAdi, puanTuru FROM programs_2026 WHERE kilavuzKodu = ?", (code,))
+                c.execute("""
+                    SELECT kilavuzKodu, universiteAdi, birimAdi, puanTuru, kontenjan, basariSirasi, minPuan, ilAdi, universiteTuru
+                    FROM programs_2026 WHERE kilavuzKodu = ?
+                """, (code,))
                 prog = c.fetchone()
                 conn.close()
                 if prog:
-                    uni_name, dept_name, score_type = prog
-                    uni_name = title_turkish(uni_name)
-                    dept_name = title_turkish(dept_name)
-                    title = f"{uni_name} {dept_name} ({score_type}) YKS Sıralama ve Puanı | UniAtlas"
-                    description = f"{uni_name} {dept_name} {score_type} puan türü başarı sıralaması ve güncel taban puanı."
+                    uni_name_clean = title_turkish(prog["universiteAdi"])
+                    dept_name_clean = title_turkish(prog["birimAdi"])
+                    score_type = prog["puanTuru"]
+                    quota = prog["kontenjan"]
+                    rank = prog["basariSirasi"]
+                    score = prog["minPuan"]
+                    uni_slug = slugify_turkish(prog["universiteAdi"])
+
+                    title = f"{uni_name_clean} {dept_name_clean} ({score_type}) YKS Sıralama ve Puanı | UniAtlas"
+                    description = f"{uni_name_clean} {dept_name_clean} {score_type} puan türü 2026 YKS başarı sıralaması ({rank or 'Dolmadı'}), taban puanı ({score or '-'}) ve kontenjan ({quota})."
+                    
+                    json_ld = {
+                        "@context": "https://schema.org",
+                        "@graph": [
+                            {
+                                "@type": "EducationalOccupationalProgram",
+                                "name": f"{uni_name_clean} {dept_name_clean}",
+                                "identifier": str(code),
+                                "educationalProgramMode": "Full-time",
+                                "provider": {
+                                    "@type": "CollegeOrUniversity",
+                                    "name": uni_name_clean,
+                                    "url": f"https://atlas.bogazici.app/universite/{uni_slug}"
+                                },
+                                "offers": {
+                                    "@type": "Offer",
+                                    "category": score_type
+                                }
+                            },
+                            {
+                                "@type": "BreadcrumbList",
+                                "itemListElement": [
+                                    {"@type": "ListItem", "position": 1, "name": "Ana Sayfa", "item": "https://atlas.bogazici.app/"},
+                                    {"@type": "ListItem", "position": 2, "name": uni_name_clean, "item": f"https://atlas.bogazici.app/universite/{uni_slug}"},
+                                    {"@type": "ListItem", "position": 3, "name": dept_name_clean, "item": url}
+                                ]
+                            }
+                        ]
+                    }
+
+                    noscript_body = f"""
+                      <div style="padding:2rem;max-width:1200px;margin:0 auto;font-family:sans-serif;line-height:1.6;">
+                        <h1>{uni_name_clean} - {dept_name_clean} ({score_type})</h1>
+                        <p><strong>Program Kodu:</strong> {code}</p>
+                        <p><strong>2026 YKS Başarı Sırası:</strong> {rank or 'Dolmadı / Bilgi Yok'}</p>
+                        <p><strong>2026 Taban Puan:</strong> {score or 'Dolmadı / Bilgi Yok'}</p>
+                        <p><strong>Kontenjan:</strong> {quota}</p>
+                        <p><a href="https://atlas.bogazici.app/universite/{uni_slug}">&larr; {uni_name_clean} Tüm Bölümleri</a> | <a href="https://atlas.bogazici.app/">Ana Sayfa</a></p>
+                      </div>
+                    """
+                else:
+                    title = f"Program #{code} YKS Başarı Sırası ve Taban Puanı | UniAtlas"
+                    description = f"{code} kodlu üniversite programı 2026 YKS taban puanları, başarı sıralaması ve kontenjan detayları."
             except Exception:
                 pass
 
@@ -862,6 +1059,11 @@ def catch_all(request: Request, full_path: str):
         html = re.sub(r'<title>.*?</title>', f'<title>{title}</title>', html, count=1)
     else:
         html = html.replace("</head>", f"<title>{title}</title>\n</head>")
+
+    json_ld_script = ""
+    if json_ld:
+        json_ld_str = json.dumps(json_ld, ensure_ascii=False, indent=2)
+        json_ld_script = f"""\n    <script type="application/ld+json">\n    {json_ld_str}\n    </script>\n"""
 
     og_tags = f"""
     <meta name="description" content="{description}" />
@@ -871,10 +1073,17 @@ def catch_all(request: Request, full_path: str):
     <meta property="og:url" content="{url}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="UniAtlas" />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="{og_image}" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="{title}" />
     <meta name="twitter:description" content="{description}" />
-    """
+    <meta name="twitter:image" content="{og_image}" />{json_ld_script}"""
     html = html.replace("</head>", f"{og_tags}</head>")
+
+    noscript_html = f"<noscript>{noscript_body}</noscript>"
+    if '<div id="root"></div>' in html:
+        html = html.replace('<div id="root"></div>', f'<div id="root">{noscript_html}</div>')
+    elif '<body>' in html:
+        html = html.replace('<body>', f'<body>{noscript_html}')
     
     return HTMLResponse(content=html, status_code=200)

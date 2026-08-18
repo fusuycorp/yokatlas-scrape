@@ -202,6 +202,12 @@ def build_unified_database():
     conn.close()
     print("Unified database created successfully at output/unified_dashboard.db!")
 
+    print(f"Compressing {db_path} to {db_gz_path}...")
+    with open(db_path, "rb") as f_in:
+        with gzip.open(db_gz_path, "wb", compresslevel=9) as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    print("Database compressed successfully.")
+
 
 if __name__ == "__main__":
     build_unified_database()
