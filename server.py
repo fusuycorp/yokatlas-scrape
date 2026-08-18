@@ -8,6 +8,8 @@ import json
 import shutil
 import sqlite3
 import re
+from functools import lru_cache
+from html import escape as html_escape
 from pathlib import Path
 from typing import Optional, List
 from fastapi import FastAPI, Query, HTTPException, Request
@@ -33,6 +35,19 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def add_cache_control(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path in ("/api/stats", "/api/universities"):
+        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=3600"
+    elif path.startswith("/api/programs") or path.startswith("/api/wizard"):
+        response.headers.setdefault("Cache-Control", "public, max-age=60")
+    elif path.startswith("/assets/"):
+        response.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
+    return response
+
+
 _uni_slug_cache = {}
 
 def tr_lower(text: str) -> str:
@@ -51,7 +66,16 @@ def title_turkish(text: str) -> str:
         elif w.startswith("ı"):
             res.append("I" + w[1:])
         else:
-            res.append(w.capitalize())
+            # Capitalize the first alphabetic char, skipping leading punctuation
+            # (e.g. "(istanbul)" -> "(İstanbul)"). \w includes Turkish letters, unlike [a-z].
+            m = re.search(r"[^\W\d_]", w)
+            if m:
+                i = m.start()
+                ch = w[i]
+                up = "İ" if ch == "i" else "I" if ch == "ı" else ch.upper()
+                res.append(w[:i] + up + w[i + 1:])
+            else:
+                res.append(w)
     return " ".join(res)
 
 def slugify_turkish(text: str) -> str:
@@ -102,20 +126,20 @@ def decompress_db_if_needed(db_path: Path, gz_path: Path):
 
 
 def get_db():
-    if not DB_PATH.exists():
+    if not DB_PATH.exists() or DB_PATH.stat().st_size == 0:
         gz_path = Path("output/unified_dashboard.db.gz")
         if gz_path.exists():
             decompress_db_if_needed(DB_PATH, gz_path)
-        else:
-            raise HTTPException(status_code=500, detail="Database file output/unified_dashboard.db not found.")
+        if not DB_PATH.exists() or DB_PATH.stat().st_size == 0:
+            raise HTTPException(status_code=500, detail="Database file output/unified_dashboard.db not found or empty.")
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.create_function("TR_NORM", 1, tr_normalize)
     return conn
 
 
-@app.get("/api/stats")
-def get_global_stats():
+@lru_cache(maxsize=1)
+def _global_stats_cached():
     conn = get_db()
     c = conn.cursor()
 
@@ -145,31 +169,54 @@ def get_global_stats():
     }
 
 
-@app.get("/api/universities")
-def get_universities(search: Optional[str] = None):
+@app.get("/api/stats")
+def get_global_stats():
+    return _global_stats_cached()
+
+
+@lru_cache(maxsize=1)
+def _universities_cached():
     conn = get_db()
     c = conn.cursor()
-
-    query = """
+    c.execute("""
         SELECT 
             universiteAdi, 
             universiteTuru, 
-            ilAdi,
+            MIN(ilAdi) as ilAdi,
             COUNT(*) as program_count,
             SUM(prof) as total_prof,
             SUM(doc) as total_doc,
             SUM(dou) as total_dou,
             SUM(arGor) as total_argor
         FROM programs_2026
-    """
-    params = []
-    if search:
-        query += " WHERE TR_NORM(universiteAdi) LIKE ?"
-        params.append(f"%{tr_normalize(search)}%")
+        GROUP BY universiteAdi ORDER BY program_count DESC
+    """)
+    rows = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return rows
 
-    query += " GROUP BY universiteAdi ORDER BY program_count DESC"
 
-    c.execute(query, params)
+@app.get("/api/universities")
+def get_universities(search: Optional[str] = None):
+    if not search:
+        return {"universities": _universities_cached()}
+
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""
+        SELECT 
+            universiteAdi, 
+            universiteTuru, 
+            MIN(ilAdi) as ilAdi,
+            COUNT(*) as program_count,
+            SUM(prof) as total_prof,
+            SUM(doc) as total_doc,
+            SUM(dou) as total_dou,
+            SUM(arGor) as total_argor
+        FROM programs_2026
+        WHERE TR_NORM(universiteAdi) LIKE ?
+        GROUP BY universiteAdi ORDER BY program_count DESC
+    """, (f"%{tr_normalize(search)}%",))
     rows = [dict(r) for r in c.fetchall()]
     conn.close()
 
@@ -185,7 +232,7 @@ def get_university_departments(uni_name: str):
         SELECT 
             universiteAdi,
             universiteTuru,
-            ilAdi,
+            MIN(ilAdi) as ilAdi,
             COUNT(*) as total_programs,
             COALESCE(SUM(kontenjan), 0) as total_quota,
             COALESCE(SUM(prof), 0) as total_prof,
@@ -204,7 +251,7 @@ def get_university_departments(uni_name: str):
             SELECT 
                 universiteAdi,
                 universiteTuru,
-                ilAdi,
+                MIN(ilAdi) as ilAdi,
                 COUNT(*) as total_programs,
                 COALESCE(SUM(kontenjan), 0) as total_quota,
                 COALESCE(SUM(prof), 0) as total_prof,
@@ -255,8 +302,8 @@ def get_programs(
     uni_type: Optional[str] = None,
     min_rank: Optional[int] = None,
     max_rank: Optional[int] = None,
-    page: int = 1,
-    limit: int = 20,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
     sort_by: str = "basariSirasi",
     sort_dir: str = "ASC"
 ):
@@ -355,7 +402,7 @@ def get_programs(
 
 
 @app.get("/api/compare")
-def compare_universities(unis: List[str] = Query(...)):
+def compare_universities(unis: List[str] = Query(..., max_length=10)):
     if not unis or len(unis) < 2:
         raise HTTPException(status_code=400, detail="Please select at least 2 universities to compare.")
 
@@ -369,7 +416,7 @@ def compare_universities(unis: List[str] = Query(...)):
         SELECT 
             universiteAdi,
             universiteTuru,
-            ilAdi,
+            MIN(ilAdi) as ilAdi,
             COUNT(*) as program_count,
             SUM(kontenjan) as total_quota,
             SUM(prof) as total_prof,
@@ -422,8 +469,15 @@ def get_program_trends(program_code: int):
     conn = get_db()
     c = conn.cursor()
 
-    # 2026 program info
-    c.execute("SELECT * FROM programs_2026 WHERE kilavuzKodu = ?", (program_code,))
+    # 2026 program info (projected — the row has 92 scraper columns the UI never reads)
+    c.execute("""
+        SELECT
+            kilavuzKodu, universiteTuru, universiteAdi, ilAdi,
+            fymkAdi, birimAdi, puanTuru, bursOraniAdi, kontenjan,
+            basariSirasi, minPuan, minBasariSirasiKosul, kosul_ids_extracted,
+            prof, doc, dou, arGor, akreditasyon, akreditasyonAck
+        FROM programs_2026 WHERE kilavuzKodu = ?
+    """, (program_code,))
     prog_2026 = c.fetchone()
     if not prog_2026:
         raise HTTPException(status_code=404, detail=f"Program code {program_code} not found in 2026 database.")
@@ -454,21 +508,28 @@ def get_program_trends(program_code: int):
         conditions = ["TR_NORM(university_name) LIKE ?", "TR_NORM(department_name) LIKE ?"]
         params = [f"%{tr_normalize(uni_name)}%", f"%{tr_normalize(base_dept)}%"]
 
+        # Medium of instruction lives in all_tags, not department_name (e.g. "Bilgisayar Mühendisliği").
         if "(ingilizce)" in norm_dept:
-            conditions.append("TR_NORM(department_name) LIKE ?")
+            conditions.append("TR_NORM(all_tags) LIKE ?")
             params.append("%ingilizce%")
 
         if score_type:
             conditions.append("score_type = ?")
             params.append(score_type)
 
-        where_clause = " AND ".join(conditions)
-        c.execute(f"""
-            SELECT DISTINCT program_code
-            FROM admissions_history
-            WHERE {where_clause}
-        """, params)
-        matched_codes = [row["program_code"] for row in c.fetchall()]
+        def _match(conds, prms):
+            where_clause = " AND ".join(conds)
+            c.execute(f"SELECT DISTINCT program_code FROM admissions_history WHERE {where_clause}", prms)
+            return [row["program_code"] for row in c.fetchall()]
+
+        matched_codes = _match(conditions, params)
+        if matched_codes:
+            # Match within the same scholarship tier so unrelated series (Burslu vs Ücretli) never mix.
+            # State universities have no bursOraniAdi; history records them as 'Ücretsiz'.
+            tier_value = prog_dict.get("bursOraniAdi") or "Ücretsiz"
+            tier_codes = _match(conditions + ["scholarship_type = ?"], params + [tier_value])
+            if tier_codes:
+                matched_codes = tier_codes
 
         if matched_codes:
             placeholders = ",".join("?" for _ in matched_codes)
@@ -683,8 +744,8 @@ def get_program_trends(program_code: int):
 @app.get("/api/wizard")
 def preference_wizard(
     score_type: str = Query(..., description="SAY, EA, SÖZ, DİL"),
-    target_rank: int = Query(..., description="Estimated student success rank"),
-    limit: int = 15
+    target_rank: int = Query(..., ge=1, description="Estimated student success rank"),
+    limit: int = Query(15, ge=1, le=100)
 ):
     conn = get_db()
     c = conn.cursor()
@@ -702,18 +763,20 @@ def preference_wizard(
     reach_min = max(1, int(target_rank * 0.4))
     reach_max = target_min
 
+    # Shared boundaries (reach_max == target_min, target_max == safe_min) must be
+    # exclusive for the upper buckets, otherwise a boundary program appears twice.
     query = """
         SELECT 
             kilavuzKodu, universiteAdi, universiteTuru, ilAdi, birimAdi,
             puanTuru, bursOraniAdi, kontenjan, basariSirasi, minPuan,
             minBasariSirasiKosul, kosul_ids_extracted, prof, doc, akreditasyon
         FROM programs_2026
-        WHERE puanTuru = ? AND basariSirasi BETWEEN ? AND ?
+        WHERE puanTuru = ? AND basariSirasi > ? AND basariSirasi <= ?
         ORDER BY basariSirasi ASC
         LIMIT ?
     """
 
-    c.execute(query, (score_type, reach_min, reach_max, limit))
+    c.execute(query, (score_type, reach_min - 1, reach_max, limit))
     reach_list = [dict(r) for r in c.fetchall()]
 
     c.execute(query, (score_type, target_min, target_max, limit))
@@ -779,6 +842,7 @@ def sitemap_static():
 </urlset>"""
     return Response(content=xml_content, media_type="application/xml", headers={"Cache-Control": "public, max-age=86400"})
 
+@lru_cache(maxsize=1)
 @app.get("/sitemap-universities.xml", response_class=Response)
 def sitemap_universities():
     conn = get_db()
@@ -797,6 +861,7 @@ def sitemap_universities():
 </urlset>"""
     return Response(content=xml_content, media_type="application/xml", headers={"Cache-Control": "public, max-age=86400"})
 
+@lru_cache(maxsize=1)
 @app.get("/sitemap-programs.xml", response_class=Response)
 def sitemap_programs():
     conn = get_db()
@@ -816,10 +881,20 @@ def sitemap_programs():
 # Fallback route for SPA with rich SEO pre-rendering
 @app.get("/{full_path:path}", response_class=HTMLResponse)
 def catch_all(request: Request, full_path: str):
-    file_path = frontend_dist / full_path
-    if file_path.exists() and file_path.is_file():
-        from fastapi.responses import FileResponse
-        return FileResponse(file_path)
+    # Unknown /api/* paths must 404, not be served as SPA HTML (which turns into a
+    # JSON parse error for apiClient).
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    # Serve static files only if they resolve inside the build directory.
+    # Never follow .. or absolute paths out of it (e.g. Path(base)/"/etc/passwd"
+    # discards the base entirely).
+    if frontend_dist.exists():
+        base = frontend_dist.resolve()
+        candidate = (base / full_path.lstrip("/")).resolve()
+        if candidate.is_relative_to(base) and candidate.is_file():
+            from fastapi.responses import FileResponse
+            return FileResponse(candidate)
 
     index_path = frontend_dist / "index.html"
     if not index_path.exists():
@@ -969,15 +1044,15 @@ def catch_all(request: Request, full_path: str):
                     }
 
                     dept_items = "".join([
-                        f"<li><a href='https://atlas.bogazici.app/program/{d['kilavuzKodu']}'>{title_turkish(d['birimAdi'])} ({d['puanTuru']})</a> - Başarı Sırası: {d['basariSirasi'] or 'Dolmadı'}, Taban Puan: {d['minPuan'] or '-'}, Kontenjan: {d['kontenjan'] or '-'}</li>"
+                        f"<li><a href='https://atlas.bogazici.app/program/{d['kilavuzKodu']}'>{html_escape(title_turkish(d['birimAdi']))} ({html_escape(d['puanTuru'])})</a> - Başarı Sırası: {d['basariSirasi'] or 'Dolmadı'}, Taban Puan: {d['minPuan'] or '-'}, Kontenjan: {d['kontenjan'] or '-'}</li>"
                         for d in dept_rows
                     ])
 
                     noscript_body = f"""
                       <div style="padding:2rem;max-width:1200px;margin:0 auto;font-family:sans-serif;line-height:1.6;">
-                        <h1>{uni_name_clean} Taban Puanları ve Bölümleri (2026 YKS)</h1>
-                        <p><strong>Tür:</strong> {uni_type} | <strong>Şehir:</strong> {city} | <strong>Toplam Program:</strong> {total_progs}</p>
-                        <p>{uni_name_clean} bünyesinde yer alan programların 2026 YKS taban puanları ve başarı sıralamaları:</p>
+                        <h1>{html_escape(uni_name_clean)} Taban Puanları ve Bölümleri (2026 YKS)</h1>
+                        <p><strong>Tür:</strong> {html_escape(uni_type)} | <strong>Şehir:</strong> {html_escape(city)} | <strong>Toplam Program:</strong> {total_progs}</p>
+                        <p>{html_escape(uni_name_clean)} bünyesinde yer alan programların 2026 YKS taban puanları ve başarı sıralamaları:</p>
                         <ul>{dept_items}</ul>
                         <p><a href="https://atlas.bogazici.app/">&larr; Tüm Üniversiteler ve Programlar</a></p>
                       </div>
@@ -1041,12 +1116,12 @@ def catch_all(request: Request, full_path: str):
 
                     noscript_body = f"""
                       <div style="padding:2rem;max-width:1200px;margin:0 auto;font-family:sans-serif;line-height:1.6;">
-                        <h1>{uni_name_clean} - {dept_name_clean} ({score_type})</h1>
-                        <p><strong>Program Kodu:</strong> {code}</p>
+                        <h1>{html_escape(uni_name_clean)} - {html_escape(dept_name_clean)} ({html_escape(score_type)})</h1>
+                        <p><strong>Program Kodu:</strong> {html_escape(code)}</p>
                         <p><strong>2026 YKS Başarı Sırası:</strong> {rank or 'Dolmadı / Bilgi Yok'}</p>
                         <p><strong>2026 Taban Puan:</strong> {score or 'Dolmadı / Bilgi Yok'}</p>
                         <p><strong>Kontenjan:</strong> {quota}</p>
-                        <p><a href="https://atlas.bogazici.app/universite/{uni_slug}">&larr; {uni_name_clean} Tüm Bölümleri</a> | <a href="https://atlas.bogazici.app/">Ana Sayfa</a></p>
+                        <p><a href="https://atlas.bogazici.app/universite/{uni_slug}">&larr; {html_escape(uni_name_clean)} Tüm Bölümleri</a> | <a href="https://atlas.bogazici.app/">Ana Sayfa</a></p>
                       </div>
                     """
                 else:
@@ -1056,27 +1131,30 @@ def catch_all(request: Request, full_path: str):
                 pass
 
     if "<title>" in html:
-        html = re.sub(r'<title>.*?</title>', f'<title>{title}</title>', html, count=1)
+        html = re.sub(r'<title>.*?</title>', lambda m: f'<title>{html_escape(title)}</title>', html, count=1)
     else:
-        html = html.replace("</head>", f"<title>{title}</title>\n</head>")
+        html = html.replace("</head>", f"<title>{html_escape(title)}</title>\n</head>")
 
     json_ld_script = ""
     if json_ld:
         json_ld_str = json.dumps(json_ld, ensure_ascii=False, indent=2)
+        # json.dumps escapes quotes/backslashes but NOT <, > or &. Neutralize the
+        # </script> breakout so attacker text can't terminate the LD+JSON block.
+        json_ld_str = json_ld_str.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
         json_ld_script = f"""\n    <script type="application/ld+json">\n    {json_ld_str}\n    </script>\n"""
 
     og_tags = f"""
-    <meta name="description" content="{description}" />
-    <link rel="canonical" href="{url}" />
-    <meta property="og:title" content="{title}" />
-    <meta property="og:description" content="{description}" />
-    <meta property="og:url" content="{url}" />
+    <meta name="description" content="{html_escape(description)}" />
+    <link rel="canonical" href="{html_escape(url, quote=True)}" />
+    <meta property="og:title" content="{html_escape(title)}" />
+    <meta property="og:description" content="{html_escape(description)}" />
+    <meta property="og:url" content="{html_escape(url, quote=True)}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="UniAtlas" />
     <meta property="og:image" content="{og_image}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="{title}" />
-    <meta name="twitter:description" content="{description}" />
+    <meta name="twitter:title" content="{html_escape(title)}" />
+    <meta name="twitter:description" content="{html_escape(description)}" />
     <meta name="twitter:image" content="{og_image}" />{json_ld_script}"""
     html = html.replace("</head>", f"{og_tags}</head>")
 

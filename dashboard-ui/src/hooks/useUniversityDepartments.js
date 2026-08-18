@@ -70,8 +70,9 @@ export function useUniversityDepartments(uniName) {
       if (valB === null || valB === undefined) return -1;
 
       if (typeof valA === 'string') {
-        valA = valA.toLowerCase();
-        valB = valB.toLowerCase();
+        // Turkish-aware comparison: under raw UTF-16, 'Ç'/'Ö'/'Ş'/'Ü'/'İ' sort after 'Z'.
+        const cmp = valA.localeCompare(valB, 'tr', { sensitivity: 'base' });
+        return sortDir === 'ASC' ? cmp : -cmp;
       }
 
       if (valA < valB) return sortDir === 'ASC' ? -1 : 1;

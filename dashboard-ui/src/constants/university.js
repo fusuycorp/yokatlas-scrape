@@ -12,6 +12,8 @@ export const UNIVERSITY_TYPES = [
   { value: 'DEVLET', label: 'Devlet (State)' },
   { value: 'VAKIF', label: 'Vakıf (Foundation)' },
   { value: 'KKTC', label: 'KKTC Universities' },
+  { value: 'YURTDISI KAMU', label: 'Yurtdışı Kamu' },
+  { value: 'YURTDISI VAKIF', label: 'Yurtdışı Vakıf' },
 ];
 
 export const DEFAULT_COMPARE_UNIVERSITIES = [

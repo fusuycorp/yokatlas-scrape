@@ -5,6 +5,7 @@ and concurrent page fetching.
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -48,7 +49,11 @@ class YokAtlasScraper:
         self.filters = filters if filters is not None else DEFAULT_FILTERS
         self.page_size = page_size
         self.concurrency = concurrency
-        self.cache_dir = cache_dir / f"pages_size_{page_size}"
+        # Include a stable hash of the filters so runs with different filter payloads
+        # never silently reuse each other's cached pages.
+        filter_key = str(sorted(self.filters.items()) if isinstance(self.filters, dict) else self.filters)
+        cache_suffix = hashlib.sha1(filter_key.encode("utf-8")).hexdigest()[:10]
+        self.cache_dir = cache_dir / f"pages_size_{page_size}_{cache_suffix}"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.max_retries = max_retries
 

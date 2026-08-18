@@ -75,7 +75,10 @@ def save_to_sqlite(records: List[Dict[str, Any]], condition_dict: Dict[str, str]
             description TEXT
         );
     """)
-    cond_rows = [(k, v) for k, v in sorted(condition_dict.items(), key=lambda x: int(x[0]) if x[0].isdigit() else x[0])]
+    cond_rows = [(k, v) for k, v in sorted(
+        condition_dict.items(),
+        key=lambda x: (0, int(x[0])) if x[0].isdigit() else (1, x[0])
+    )]
     cursor.executemany("INSERT INTO conditions (code, description) VALUES (?, ?);", cond_rows)
 
     # Create junction table program_conditions

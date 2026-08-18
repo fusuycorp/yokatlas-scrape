@@ -264,6 +264,22 @@ class TestProgramTrendsAPI:
         data = response.json()
         assert "detail" in data
 
+    def test_trends_english_medium_fallback_uses_all_tags(self):
+        """English-medium programs must resolve history via all_tags, not department_name.
+        Regression for the ``(ingilizce)`` filter reading the wrong column (was returning empty history)."""
+        response = client.get("/api/trends/102270217")  # Boğaziçi Tarih (İngilizce)
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["history"]) > 0, "English-medium fallback resolved no history"
+
+    def test_trends_fallback_filters_scholarship_tier(self):
+        """Fallback must match within a single scholarship tier, not blend Burslu/Ücretli series.
+        Regression for unrelated series being merged (Yeditepe Burslu case)."""
+        response = client.get("/api/trends/206100360")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["history"]) > 0, "Tiered vakıf fallback resolved no history"
+
 
 # ==============================================================================
 # FEATURE 3: i18n Language State & Locale Dictionaries Integrity Tests

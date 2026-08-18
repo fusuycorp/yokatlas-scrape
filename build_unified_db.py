@@ -194,6 +194,15 @@ def build_unified_database():
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_p2026_search_norm ON programs_2026(search_text_norm);")
 
+    # Composite / expression indexes so the landing-page ORDER BY (basariSirasi IS NULL,
+    # basariSirasi) and the filter+sort combos don't fall back to a full 80 MB table scan.
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_p2026_sira_nulls ON programs_2026(basariSirasi IS NULL, basariSirasi);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_p2026_puan_sira_nulls ON programs_2026(puanTuru, basariSirasi IS NULL, basariSirasi);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_p2026_turu_sira_nulls ON programs_2026(universiteTuru, basariSirasi IS NULL, basariSirasi);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_p2026_puan_sira ON programs_2026(puanTuru, basariSirasi);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_p2026_uni_cover ON programs_2026(universiteAdi, universiteTuru, ilAdi, prof, doc, dou, arGor);")
+    cursor.execute("ANALYZE;")
+
     cursor.execute("SELECT COUNT(*) FROM programs_2026")
     prog_count = cursor.fetchone()[0]
     print(f"Total programs in 'programs_2026': {prog_count}")

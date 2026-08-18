@@ -23,6 +23,7 @@ export function useCompare(initialUnis = DEFAULT_COMPARE_UNIVERSITIES) {
 
     let isMounted = true;
     setLoading(true);
+    setError(null);
 
     uniatlasService
       .compareUniversities(selectedUnis)

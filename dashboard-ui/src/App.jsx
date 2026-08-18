@@ -27,11 +27,14 @@ const UniversityPageWrapper = ({ onToggleBookmark, bookmarkedIds }) => {
   useEffect(() => {
     if (!uniName && uniSlug) {
       setLoading(true);
-      uniatlasService.getUniversities().then((data) => {
-        const found = unslugifyUniversity(uniSlug, data.map(u => u.universite));
-        if (found) setUniName(found);
-        setLoading(false);
-      });
+      uniatlasService
+        .getUniversities()
+        .then((data) => {
+          const found = unslugifyUniversity(uniSlug, (data.universities || []).map((u) => u.universiteAdi));
+          if (found) setUniName(found);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
     }
   }, [uniSlug, uniName]);
 
@@ -81,7 +84,7 @@ const ProgramDetailWrapper = ({ onToggleBookmark, bookmarkedIds }) => {
           programCode={programCode}
           onClose={() => navigate(-1)}
           onToggleBookmark={onToggleBookmark}
-          isBookmarked={bookmarkedIds.has(programCode)}
+          isBookmarked={bookmarkedIds.has(Number(programCode))}
         />
       </div>
     </>
