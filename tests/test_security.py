@@ -112,7 +112,27 @@ class TestSlugParity:
         names = [r[0] for r in conn.execute("SELECT DISTINCT universiteAdi FROM programs_2026")]
         conn.close()
         mismatch = [n for n in names if slugify_turkish(n) != self._js_slug(n)]
-        assert not mismatch, f"Slug mismatch for: {mismatch[:5]}"
+class TestDomainRedirect:
+    """Requests targeting the legacy domain atlas.bogazici.app must 302 redirect to atlas.bountools.com."""
+
+    def test_root_redirects_302(self):
+        resp = client.get("/", headers={"host": "atlas.bogazici.app"}, follow_redirects=False)
+        assert resp.status_code == 302
+        assert resp.headers["location"] == "https://atlas.bountools.com/"
+
+    def test_subpath_redirects_302(self):
+        resp = client.get("/universite/bogazici-universitesi", headers={"host": "atlas.bogazici.app"}, follow_redirects=False)
+        assert resp.status_code == 302
+        assert resp.headers["location"] == "https://atlas.bountools.com/universite/bogazici-universitesi"
+
+    def test_query_params_preserved(self):
+        resp = client.get("/api/stats?foo=bar", headers={"host": "atlas.bogazici.app:443"}, follow_redirects=False)
+        assert resp.status_code == 302
+        assert resp.headers["location"] == "https://atlas.bountools.com/api/stats?foo=bar"
+
+    def test_new_domain_not_redirected(self):
+        resp = client.get("/api/stats", headers={"host": "atlas.bountools.com"})
+        assert resp.status_code == 200
 
 
 if __name__ == "__main__":

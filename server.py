@@ -13,7 +13,7 @@ from html import escape as html_escape
 from pathlib import Path
 from typing import Optional, List
 from fastapi import FastAPI, Query, HTTPException, Request
-from fastapi.responses import PlainTextResponse, Response, HTMLResponse
+from fastapi.responses import PlainTextResponse, Response, HTMLResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -33,6 +33,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def domain_redirect_middleware(request: Request, call_next):
+    host = request.headers.get("host", "").split(":")[0].lower()
+    if host == "atlas.bogazici.app":
+        target_url = request.url.replace(netloc="atlas.bountools.com", scheme="https")
+        return RedirectResponse(url=str(target_url), status_code=302)
+    return await call_next(request)
 
 
 @app.middleware("http")
