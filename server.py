@@ -812,7 +812,7 @@ def get_robots_txt():
     content = (
         "User-agent: *\n"
         "Allow: /\n"
-        "Sitemap: https://atlas.bogazici.app/sitemap.xml\n"
+        "Sitemap: https://atlas.bountools.com/sitemap.xml\n"
     )
     return PlainTextResponse(content=content, headers={"Cache-Control": "public, max-age=3600"})
 
@@ -821,13 +821,13 @@ def sitemap_index():
     xml_content = """<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
    <sitemap>
-      <loc>https://atlas.bogazici.app/sitemap-static.xml</loc>
+      <loc>https://atlas.bountools.com/sitemap-static.xml</loc>
    </sitemap>
    <sitemap>
-      <loc>https://atlas.bogazici.app/sitemap-universities.xml</loc>
+      <loc>https://atlas.bountools.com/sitemap-universities.xml</loc>
    </sitemap>
    <sitemap>
-      <loc>https://atlas.bogazici.app/sitemap-programs.xml</loc>
+      <loc>https://atlas.bountools.com/sitemap-programs.xml</loc>
    </sitemap>
 </sitemapindex>"""
     return Response(content=xml_content, media_type="application/xml", headers={"Cache-Control": "public, max-age=86400"})
@@ -835,7 +835,7 @@ def sitemap_index():
 @app.get("/sitemap-static.xml", response_class=Response)
 def sitemap_static():
     urls = ["/", "/karsilastir", "/trendler", "/tercih-sihirbazi"]
-    url_tags = "\n".join([f"  <url><loc>https://atlas.bogazici.app{url}</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>" for url in urls])
+    url_tags = "\n".join([f"  <url><loc>https://atlas.bountools.com{url}</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>" for url in urls])
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 {url_tags}
@@ -853,7 +853,7 @@ def sitemap_universities():
         uni_name = row[0]
         if uni_name:
             slug = slugify_turkish(uni_name)
-            urls.append(f"  <url><loc>https://atlas.bogazici.app/universite/{slug}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>")
+            urls.append(f"  <url><loc>https://atlas.bountools.com/universite/{slug}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>")
     conn.close()
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -870,7 +870,7 @@ def sitemap_programs():
     urls = []
     for row in c.fetchall():
         code = row[0]
-        urls.append(f"  <url><loc>https://atlas.bogazici.app/program/{code}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>")
+        urls.append(f"  <url><loc>https://atlas.bountools.com/program/{code}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>")
     conn.close()
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -905,17 +905,17 @@ def catch_all(request: Request, full_path: str):
 
     title = "UniAtlas | YÖK ATLAS & YKS Üniversite Tercih ve Taban Puanları Analiz Platformu"
     description = "2026 YKS taban puanları, kontenjanları, başarı sıralamaları ve üniversite karşılaştırma platformu."
-    url = f"https://atlas.bogazici.app/{full_path}" if full_path else "https://atlas.bogazici.app/"
-    og_image = "https://atlas.bogazici.app/og-image.jpg"
+    url = f"https://atlas.bountools.com/{full_path}" if full_path else "https://atlas.bountools.com/"
+    og_image = "https://atlas.bountools.com/og-image.jpg"
     
     json_ld = {
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "UniAtlas",
-        "url": "https://atlas.bogazici.app/",
+        "url": "https://atlas.bountools.com/",
         "potentialAction": {
             "@type": "SearchAction",
-            "target": "https://atlas.bogazici.app/?search={search_term_string}",
+            "target": "https://atlas.bountools.com/?search={search_term_string}",
             "query-input": "required name=search_term_string"
         }
     }
@@ -926,10 +926,10 @@ def catch_all(request: Request, full_path: str):
         <p>2026 YKS taban puanları, başarı sıralamaları, kontenjan verileri ve yapay zeka destekli üniversite tercih rehberliği platformu.</p>
         <nav>
           <ul>
-            <li><a href="https://atlas.bogazici.app/">Program Arama & Filtreleme</a></li>
-            <li><a href="https://atlas.bogazici.app/karsilastir">Üniversite Karşılaştırma</a></li>
-            <li><a href="https://atlas.bogazici.app/trendler">Sıralama Trendleri</a></li>
-            <li><a href="https://atlas.bogazici.app/tercih-sihirbazi">Tercih Sihirbazı</a></li>
+            <li><a href="https://atlas.bountools.com/">Program Arama & Filtreleme</a></li>
+            <li><a href="https://atlas.bountools.com/karsilastir">Üniversite Karşılaştırma</a></li>
+            <li><a href="https://atlas.bountools.com/trendler">Sıralama Trendleri</a></li>
+            <li><a href="https://atlas.bountools.com/tercih-sihirbazi">Tercih Sihirbazı</a></li>
           </ul>
         </nav>
       </div>
@@ -949,7 +949,7 @@ def catch_all(request: Request, full_path: str):
           <div style="padding:2rem;max-width:1200px;margin:0 auto;font-family:sans-serif;line-height:1.6;">
             <h1>Üniversite Karşılaştırma | UniAtlas</h1>
             <p>{description}</p>
-            <p><a href="https://atlas.bogazici.app/">&larr; Ana Sayfa</a></p>
+            <p><a href="https://atlas.bountools.com/">&larr; Ana Sayfa</a></p>
           </div>
         """
 
@@ -967,7 +967,7 @@ def catch_all(request: Request, full_path: str):
           <div style="padding:2rem;max-width:1200px;margin:0 auto;font-family:sans-serif;line-height:1.6;">
             <h1>YKS Başarı Sıralaması ve Taban Puan Trendleri | UniAtlas</h1>
             <p>{description}</p>
-            <p><a href="https://atlas.bogazici.app/">&larr; Ana Sayfa</a></p>
+            <p><a href="https://atlas.bountools.com/">&larr; Ana Sayfa</a></p>
           </div>
         """
 
@@ -985,7 +985,7 @@ def catch_all(request: Request, full_path: str):
           <div style="padding:2rem;max-width:1200px;margin:0 auto;font-family:sans-serif;line-height:1.6;">
             <h1>YKS Tercih Sihirbazı | UniAtlas</h1>
             <p>{description}</p>
-            <p><a href="https://atlas.bogazici.app/">&larr; Ana Sayfa</a></p>
+            <p><a href="https://atlas.bountools.com/">&larr; Ana Sayfa</a></p>
           </div>
         """
 
@@ -1036,7 +1036,7 @@ def catch_all(request: Request, full_path: str):
                             {
                                 "@type": "BreadcrumbList",
                                 "itemListElement": [
-                                    {"@type": "ListItem", "position": 1, "name": "Ana Sayfa", "item": "https://atlas.bogazici.app/"},
+                                    {"@type": "ListItem", "position": 1, "name": "Ana Sayfa", "item": "https://atlas.bountools.com/"},
                                     {"@type": "ListItem", "position": 2, "name": uni_name_clean, "item": url}
                                 ]
                             }
@@ -1044,7 +1044,7 @@ def catch_all(request: Request, full_path: str):
                     }
 
                     dept_items = "".join([
-                        f"<li><a href='https://atlas.bogazici.app/program/{d['kilavuzKodu']}'>{html_escape(title_turkish(d['birimAdi']))} ({html_escape(d['puanTuru'])})</a> - Başarı Sırası: {d['basariSirasi'] or 'Dolmadı'}, Taban Puan: {d['minPuan'] or '-'}, Kontenjan: {d['kontenjan'] or '-'}</li>"
+                        f"<li><a href='https://atlas.bountools.com/program/{d['kilavuzKodu']}'>{html_escape(title_turkish(d['birimAdi']))} ({html_escape(d['puanTuru'])})</a> - Başarı Sırası: {d['basariSirasi'] or 'Dolmadı'}, Taban Puan: {d['minPuan'] or '-'}, Kontenjan: {d['kontenjan'] or '-'}</li>"
                         for d in dept_rows
                     ])
 
@@ -1054,7 +1054,7 @@ def catch_all(request: Request, full_path: str):
                         <p><strong>Tür:</strong> {html_escape(uni_type)} | <strong>Şehir:</strong> {html_escape(city)} | <strong>Toplam Program:</strong> {total_progs}</p>
                         <p>{html_escape(uni_name_clean)} bünyesinde yer alan programların 2026 YKS taban puanları ve başarı sıralamaları:</p>
                         <ul>{dept_items}</ul>
-                        <p><a href="https://atlas.bogazici.app/">&larr; Tüm Üniversiteler ve Programlar</a></p>
+                        <p><a href="https://atlas.bountools.com/">&larr; Tüm Üniversiteler ve Programlar</a></p>
                       </div>
                     """
                 except Exception:
@@ -1096,7 +1096,7 @@ def catch_all(request: Request, full_path: str):
                                 "provider": {
                                     "@type": "CollegeOrUniversity",
                                     "name": uni_name_clean,
-                                    "url": f"https://atlas.bogazici.app/universite/{uni_slug}"
+                                    "url": f"https://atlas.bountools.com/universite/{uni_slug}"
                                 },
                                 "offers": {
                                     "@type": "Offer",
@@ -1106,8 +1106,8 @@ def catch_all(request: Request, full_path: str):
                             {
                                 "@type": "BreadcrumbList",
                                 "itemListElement": [
-                                    {"@type": "ListItem", "position": 1, "name": "Ana Sayfa", "item": "https://atlas.bogazici.app/"},
-                                    {"@type": "ListItem", "position": 2, "name": uni_name_clean, "item": f"https://atlas.bogazici.app/universite/{uni_slug}"},
+                                    {"@type": "ListItem", "position": 1, "name": "Ana Sayfa", "item": "https://atlas.bountools.com/"},
+                                    {"@type": "ListItem", "position": 2, "name": uni_name_clean, "item": f"https://atlas.bountools.com/universite/{uni_slug}"},
                                     {"@type": "ListItem", "position": 3, "name": dept_name_clean, "item": url}
                                 ]
                             }
@@ -1121,7 +1121,7 @@ def catch_all(request: Request, full_path: str):
                         <p><strong>2026 YKS Başarı Sırası:</strong> {rank or 'Dolmadı / Bilgi Yok'}</p>
                         <p><strong>2026 Taban Puan:</strong> {score or 'Dolmadı / Bilgi Yok'}</p>
                         <p><strong>Kontenjan:</strong> {quota}</p>
-                        <p><a href="https://atlas.bogazici.app/universite/{uni_slug}">&larr; {html_escape(uni_name_clean)} Tüm Bölümleri</a> | <a href="https://atlas.bogazici.app/">Ana Sayfa</a></p>
+                        <p><a href="https://atlas.bountools.com/universite/{uni_slug}">&larr; {html_escape(uni_name_clean)} Tüm Bölümleri</a> | <a href="https://atlas.bountools.com/">Ana Sayfa</a></p>
                       </div>
                     """
                 else:

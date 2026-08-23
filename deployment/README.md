@@ -1,11 +1,11 @@
 # UniAtlas Self-Hosted Deployment Guide
 
-This directory contains configuration files and deployment instructions for hosting **UniAtlas** (`atlas.bogazici.app`) on a self-hosted Docker Swarm cluster via **Dokploy**.
+This directory contains configuration files and deployment instructions for hosting **UniAtlas** (`atlas.bountools.com`) on a self-hosted Docker Swarm cluster via **Dokploy**.
 
 ## Infrastructure & Stack Overview
 
 - **App Name**: `uniatlas`
-- **Domain**: `atlas.bogazici.app`
+- **Domain**: `atlas.bountools.com`
 - **Container Registry**: `registry.bogazici.app/budok/uniyok-atlas:latest`
 - **Orchestration**: Docker Swarm via Dokploy Stacks
 - **Reverse Proxy**: Traefik with automated Let's Encrypt TLS certificates
@@ -13,16 +13,16 @@ This directory contains configuration files and deployment instructions for host
 ## Deployment Architecture
 
 ```
-[Internet] --> [Traefik (atlas.bogazici.app)] 
+[Internet] --> [Traefik (atlas.bountools.com)] 
                  |
                  +--> [uniyok-atlas:8000] (FastAPI + Embedded React Frontend + SQLite DB)
 ```
 
 ## SEO Routes & Traffic Handling
 
-Traefik is configured with `traefik.http.routers.uniyok-atlas.rule=Host("atlas.bogazici.app")`, routing all HTTP traffic on the domain directly to FastAPI on port 8000. No path-level reverse proxy rewrites are required because FastAPI handles:
+Traefik is configured with `traefik.http.routers.uniyok-atlas.rule=Host("atlas.bountools.com")`, routing all HTTP traffic on the domain directly to FastAPI on port 8000. No path-level reverse proxy rewrites are required because FastAPI handles:
 
-- **Robots Directive**: `/robots.txt` (pointing to `https://atlas.bogazici.app/sitemap.xml`)
+- **Robots Directive**: `/robots.txt` (pointing to `https://atlas.bountools.com/sitemap.xml`)
 - **XML Sitemaps**: `/sitemap.xml` (index), `/sitemap-static.xml`, `/sitemap-universities.xml`, `/sitemap-programs.xml` (dynamically rendered from SQLite)
 - **Dynamic SEO / SSR Meta Routes**: `/universite/{slug}`, `/program/{code}` (catch-all route dynamically injects page-specific OpenGraph, Twitter, and canonical meta tags into `index.html` for crawlers before returning the SPA shell)
 - **Static Asset Serving**: `/assets/*` and static React bundle distribution

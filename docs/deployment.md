@@ -1,6 +1,6 @@
 # Production Deployment Guide: Docker Swarm & Dokploy
 
-This document details the production deployment pipeline for **UniAtlas** (`atlas.bogazici.app`) using Dokploy, Docker Swarm stacks, custom container registries, and GitHub Actions.
+This document details the production deployment pipeline for **UniAtlas** (`atlas.bountools.com`) using Dokploy, Docker Swarm stacks, custom container registries, and GitHub Actions.
 
 ---
 
@@ -20,7 +20,7 @@ This document details the production deployment pipeline for **UniAtlas** (`atla
 
 ## Domain & Registry Configuration
 
-- **Domain**: `atlas.bogazici.app`
+- **Domain**: `atlas.bountools.com`
 - **Port**: `8000`
 - **Service Name**: `uniyok-atlas`
 - **Container Image**: `registry.bogazici.app/budok/uniyok-atlas:latest`
@@ -78,7 +78,7 @@ services:
           memory: 2G
       labels:
         - traefik.enable=true
-        - traefik.http.routers.uniyok-atlas.rule=Host("atlas.bogazici.app")
+        - traefik.http.routers.uniyok-atlas.rule=Host("atlas.bountools.com")
         - traefik.http.routers.uniyok-atlas.entrypoints=websecure
         - traefik.http.routers.uniyok-atlas.tls.certresolver=letsencrypt
         - traefik.http.services.uniyok-atlas.loadbalancer.server.port=8000

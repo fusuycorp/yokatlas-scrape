@@ -4,9 +4,9 @@ import { Helmet } from 'react-helmet-async';
 export function SeoHead({
   title = 'UniAtlas | YKS Üniversite Tercih & Taban Puanları Analiz Platformu',
   description = 'YKS tercih dönemi için üniversite taban puanları, başarı sıralamaları ve kontenjan verilerini analiz edin.',
-  canonical = 'https://atlas.bogazici.app',
+  canonical = 'https://atlas.bountools.com',
   ogType = 'website',
-  ogImage = 'https://atlas.bogazici.app/og-image.jpg',
+  ogImage = 'https://atlas.bountools.com/og-image.jpg',
   jsonLd = null,
 }) {
   return (

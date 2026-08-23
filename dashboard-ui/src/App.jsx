@@ -46,7 +46,7 @@ const UniversityPageWrapper = ({ onToggleBookmark, bookmarkedIds }) => {
       <SeoHead
         title={`${uniName} Taban Puanları, Kontenjan ve Bölümleri | UniAtlas`}
         description={`${uniName} 2026 yılı güncel taban puanları, başarı sıralamaları ve kontenjanları.`}
-        canonical={`https://atlas.bogazici.app/universite/${uniSlug}`}
+        canonical={`https://atlas.bountools.com/universite/${uniSlug}`}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "EducationalOrganization",
@@ -72,7 +72,7 @@ const ProgramDetailWrapper = ({ onToggleBookmark, bookmarkedIds }) => {
       <SeoHead
         title={`${programCode} YKS Sıralama ve Taban Puanları | UniAtlas`}
         description={`${programCode} kodlu programın YKS sıralama ve taban puanı detayları.`}
-        canonical={`https://atlas.bogazici.app/program/${programCode}`}
+        canonical={`https://atlas.bountools.com/program/${programCode}`}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "EducationalOccupationalProgram",
@@ -125,15 +125,15 @@ export default function App() {
               <SeoHead
                 title="UniAtlas | YKS Üniversite Tercih & Taban Puanları Analiz Platformu"
                 description="YKS tercih dönemi için üniversite taban puanları, başarı sıralamaları ve kontenjan verilerini analiz edin."
-                canonical="https://atlas.bogazici.app"
+                canonical="https://atlas.bountools.com"
                 jsonLd={{
                   "@context": "https://schema.org",
                   "@type": "WebSite",
                   "name": "UniAtlas",
-                  "url": "https://atlas.bogazici.app",
+                  "url": "https://atlas.bountools.com",
                   "potentialAction": {
                     "@type": "SearchAction",
-                    "target": "https://atlas.bogazici.app/?search={search_term_string}",
+                    "target": "https://atlas.bountools.com/?search={search_term_string}",
                     "query-input": "required name=search_term_string"
                   }
                 }}
@@ -167,7 +167,7 @@ export default function App() {
               <SeoHead
                 title="Üniversite Karşılaştırma | UniAtlas"
                 description="Birden fazla üniversiteyi ve bölümü yan yana karşılaştırın."
-                canonical="https://atlas.bogazici.app/karsilastir"
+                canonical="https://atlas.bountools.com/karsilastir"
               />
               <h1 className="sr-only">Üniversite Karşılaştırma</h1>
               <UniComparatorTab onSelectUniversity={handleSelectUniversity} />
@@ -179,7 +179,7 @@ export default function App() {
               <SeoHead
                 title="Sıralama Trendleri | UniAtlas"
                 description="Üniversite bölümlerinin yıllara göre başarı sıralaması trendlerini inceleyin."
-                canonical="https://atlas.bogazici.app/trendler"
+                canonical="https://atlas.bountools.com/trendler"
               />
               <h1 className="sr-only">Sıralama Trendleri</h1>
               <RankTrendsTab />
@@ -191,7 +191,7 @@ export default function App() {
               <SeoHead
                 title="Tercih Sihirbazı | UniAtlas"
                 description="YKS sıralamanıza göre size en uygun üniversite ve bölümleri bulun."
-                canonical="https://atlas.bogazici.app/tercih-sihirbazi"
+                canonical="https://atlas.bountools.com/tercih-sihirbazi"
               />
               <h1 className="sr-only">Tercih Sihirbazı</h1>
               <PreferenceWizardTab

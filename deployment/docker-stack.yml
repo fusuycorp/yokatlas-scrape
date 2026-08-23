@@ -25,7 +25,7 @@ services:
           memory: 2G
       labels:
         - traefik.enable=true
-        - traefik.http.routers.uniyok-atlas.rule=Host("atlas.bogazici.app")
+        - traefik.http.routers.uniyok-atlas.rule=Host("atlas.bountools.com")
         - traefik.http.routers.uniyok-atlas.entrypoints=websecure
         - traefik.http.routers.uniyok-atlas.tls.certresolver=letsencrypt
         - traefik.http.services.uniyok-atlas.loadbalancer.server.port=8000

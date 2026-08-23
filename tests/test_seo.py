@@ -17,7 +17,7 @@ def test_robots_txt():
     assert response.status_code == 200
     assert "text/plain" in response.headers["content-type"]
     assert "Cache-Control" in response.headers
-    assert "Sitemap: https://atlas.bogazici.app/sitemap.xml" in response.text
+    assert "Sitemap: https://atlas.bountools.com/sitemap.xml" in response.text
 
 def test_sitemaps():
     response = client.get("/sitemap.xml")
@@ -47,7 +47,7 @@ def test_dynamic_university_html():
     assert "application/ld+json" in response.text
     assert "CollegeOrUniversity" in response.text
     assert "<noscript>" in response.text
-    assert 'href="https://atlas.bogazici.app/universite/bogazici-universitesi"' in response.text
+    assert 'href="https://atlas.bountools.com/universite/bogazici-universitesi"' in response.text
 
 def test_dynamic_program_html():
     response = client.get("/program/203110477")
@@ -57,7 +57,7 @@ def test_dynamic_program_html():
     assert "application/ld+json" in response.text
     assert "EducationalOccupationalProgram" in response.text
     assert "<noscript>" in response.text
-    assert 'href="https://atlas.bogazici.app/program/203110477"' in response.text
+    assert 'href="https://atlas.bountools.com/program/203110477"' in response.text
 
 def test_root_seo_html():
     response = client.get("/")
@@ -67,8 +67,8 @@ def test_root_seo_html():
     assert "application/ld+json" in response.text
     assert "SearchAction" in response.text
     assert "<noscript>" in response.text
-    assert 'href="https://atlas.bogazici.app/"' in response.text
-    assert 'content="https://atlas.bogazici.app/"' in response.text
+    assert 'href="https://atlas.bountools.com/"' in response.text
+    assert 'content="https://atlas.bountools.com/"' in response.text
 
 def test_static_routes_seo_html():
     for route, expected_word in [

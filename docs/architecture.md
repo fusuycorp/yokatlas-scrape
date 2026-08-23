@@ -19,7 +19,7 @@ flowchart TD
         G --> H["FastAPI Backend (server.py)"]
         I["React Frontend (dashboard-ui)"] -->|Bundled Assets| H
         H -->|HTTP Port 8000| J["Traefik Reverse Proxy"]
-        J -->|SSL / TLS| K["Users / Clients (atlas.bogazici.app)"]
+        J -->|SSL / TLS| K["Users / Clients (atlas.bountools.com)"]
     end
 ```
 
