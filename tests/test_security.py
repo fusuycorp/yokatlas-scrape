@@ -110,8 +110,10 @@ class TestSlugParity:
         db = PROJECT_ROOT / "output" / "unified_dashboard.db"
         conn = sqlite3.connect(str(db))
         names = [r[0] for r in conn.execute("SELECT DISTINCT universiteAdi FROM programs_2026")]
-        conn.close()
         mismatch = [n for n in names if slugify_turkish(n) != self._js_slug(n)]
+        assert mismatch == []
+
+
 class TestDomainRedirect:
     """Requests targeting the legacy domain atlas.bogazici.app must 302 redirect to atlas.bountools.com."""
 
