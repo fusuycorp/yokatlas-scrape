@@ -15,6 +15,29 @@ export function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmar
   const { t } = useLanguage();
   const p = data?.program;
 
+  // Lock background scroll on mount to prevent mobile Safari bounce / scroll chaining
+  React.useEffect(() => {
+    if (!programCode) return;
+    const originalOverflow = document.body.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouchAction;
+    };
+  }, [programCode]);
+
+  // Handle ESC key
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose?.();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const chartData = data?.history
     ? data.history.map((h) => ({
         year: h.year,
@@ -36,10 +59,16 @@ export function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmar
   if (!programCode) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-md">
-      <div className="glass-panel w-full max-w-5xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl border border-slate-700 shadow-2xl p-4 sm:p-6 space-y-4 sm:space-y-5 pb-safe animate-slide-up sm:animate-none">
-        {/* Sticky Header */}
-        <div className="sticky top-0 bg-slate-900/95 backdrop-blur-md z-20 -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 p-4 sm:p-6 border-b border-slate-800 flex items-start justify-between gap-3">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-md overscroll-none touch-none"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="glass-panel w-full max-w-5xl max-h-[85dvh] sm:max-h-[88dvh] flex flex-col rounded-t-3xl sm:rounded-2xl border border-slate-700 shadow-2xl overflow-hidden animate-slide-up sm:animate-none touch-auto"
+      >
+        {/* Modal Header (Docked at top, independent of scroll) */}
+        <div className="shrink-0 bg-slate-900/95 backdrop-blur-md p-4 sm:p-6 border-b border-slate-800 flex items-start justify-between gap-3 z-10">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Badge variant="indigo">{t('modal.programCode', { code: programCode })}</Badge>
@@ -60,7 +89,7 @@ export function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmar
               <button
                 onClick={() => onToggleBookmark(p)}
                 aria-label="Bookmark"
-                className={`p-2 rounded-xl border transition ${
+                className={`p-2 rounded-xl border transition cursor-pointer ${
                   isBookmarked
                     ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
                     : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
@@ -72,12 +101,15 @@ export function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmar
             <button
               onClick={onClose}
               aria-label="Close"
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition"
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition cursor-pointer"
             >
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
+
+        {/* Scrollable Modal Content */}
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 sm:space-y-5 pb-safe">
 
         {loading ? (
           <div className="py-12">
@@ -184,6 +216,7 @@ export function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmar
             )}
           </div>
         ) : null}
+        </div>
       </div>
     </div>
   );

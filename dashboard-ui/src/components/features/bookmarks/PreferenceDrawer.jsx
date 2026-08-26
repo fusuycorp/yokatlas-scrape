@@ -8,11 +8,41 @@ import { Button } from '../../ui/Button';
 export function PreferenceDrawer({ isOpen, onClose, savedPrograms, onRemoveBookmark, onClearAll, onSelectProgram }) {
   const { t } = useLanguage();
 
+  // Lock background scroll when drawer is open
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouchAction;
+    };
+  }, [isOpen]);
+
+  // Handle ESC key
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose?.();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/70 backdrop-blur-sm">
-      <div className="glass-panel w-full sm:max-w-md h-full flex flex-col border-l border-slate-800 shadow-2xl p-4 sm:p-6">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex justify-end bg-slate-950/70 backdrop-blur-sm overscroll-none touch-none"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="glass-panel w-full sm:max-w-md h-[100dvh] flex flex-col border-l border-slate-800 shadow-2xl p-4 sm:p-6 touch-auto"
+      >
         {/* Drawer Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3 sm:pb-4">
           <div className="flex items-center gap-2">

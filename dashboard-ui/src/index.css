@@ -11,6 +11,11 @@
   .overflow-y-auto {
     -webkit-overflow-scrolling: touch;
   }
+
+  .overscroll-contain {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Safe area padding utilities */
