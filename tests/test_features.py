@@ -264,6 +264,26 @@ class TestProgramTrendsAPI:
         data = response.json()
         assert "detail" in data
 
+    def test_trends_includes_2025_timeline_entry(self):
+        """Test that programs with 2025 YÖK Atlas data include 2025 in history and yoy_comparisons."""
+        response = client.get("/api/trends/102210277")  # Boğaziçi Bilgisayar
+        assert response.status_code == 200
+        data = response.json()
+
+        history_years = [h["year"] for h in data["history"]]
+        assert 2025 in history_years, "2025 must be present in admissions history"
+
+        yoy_years = [y["year"] for y in data["yoy_comparisons"]]
+        assert 2025 in yoy_years, "2025 must be present in yoy_comparisons"
+
+        # Check latest comparison compares 2026 to 2025
+        latest = data["yoy_deltas"]["latest_comparison"]
+        assert latest is not None
+        assert latest["year"] == 2026
+        assert latest["prev_year"] == 2025
+        assert latest["rank"] == 4560.0
+        assert latest["rank_delta"] == 3112
+
     def test_trends_english_medium_fallback_uses_all_tags(self):
         """English-medium programs must resolve history via all_tags, not department_name.
         Regression for the ``(ingilizce)`` filter reading the wrong column (was returning empty history)."""

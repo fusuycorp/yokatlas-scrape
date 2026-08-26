@@ -484,7 +484,10 @@ def get_program_trends(program_code: int):
             kilavuzKodu, universiteTuru, universiteAdi, ilAdi,
             fymkAdi, birimAdi, puanTuru, bursOraniAdi, kontenjan,
             basariSirasi, minPuan, minBasariSirasiKosul, kosul_ids_extracted,
-            prof, doc, dou, arGor, akreditasyon, akreditasyonAck
+            prof, doc, dou, arGor, akreditasyon, akreditasyonAck,
+            basariSirasi1, minPuan1, gk1,
+            basariSirasi2, minPuan2, gk2,
+            basariSirasi3, minPuan3, gk3
         FROM programs_2026 WHERE kilavuzKodu = ?
     """, (program_code,))
     prog_2026 = c.fetchone()
@@ -575,6 +578,24 @@ def get_program_trends(program_code: int):
 
     conn.close()
 
+    def _safe_float(v):
+        if v is None:
+            return None
+        try:
+            f = float(str(v).replace(",", "."))
+            return f if f > 0 else None
+        except (ValueError, TypeError):
+            return None
+
+    def _safe_int(v):
+        if v is None:
+            return None
+        try:
+            i = int(float(str(v).replace(",", ".")))
+            return i if i > 0 else None
+        except (ValueError, TypeError):
+            return None
+
     # Build annual data map across 2019-2026
     yearly_map = {}
 
@@ -589,6 +610,44 @@ def get_program_trends(program_code: int):
             "demand_per_quota": h.get("demand_per_quota"),
             "total_preferences": h.get("total_preferences"),
         }
+
+    # Add 2025 entry from YÖK Atlas scraped data (basariSirasi1, minPuan1, gk1)
+    r2025 = _safe_float(prog_dict.get("basariSirasi1"))
+    s2025 = _safe_float(prog_dict.get("minPuan1"))
+    q2025 = _safe_int(prog_dict.get("gk1"))
+
+    if 2025 not in yearly_map and (r2025 is not None or s2025 is not None or q2025 is not None):
+        yearly_map[2025] = {
+            "year": 2025,
+            "rank": r2025,
+            "score": s2025,
+            "quota": q2025,
+            "enrolled": None,
+            "demand_per_quota": None,
+            "total_preferences": None,
+        }
+
+    # Ensure history list includes 2025 for chart and history consumers
+    hist_years = {int(h["year"]) for h in history}
+    if 2025 not in hist_years and (r2025 is not None or s2025 is not None):
+        history.append({
+            "year": 2025,
+            "total_quota": q2025,
+            "total_enrolled": None,
+            "male": None,
+            "female": None,
+            "final_score_012": s2025,
+            "final_rank_012": r2025,
+            "initial_placement_rate": None,
+            "total_preferences": None,
+            "demand_per_quota": None,
+            "avg_preference_rank": None,
+            "top_1_pref_count": None,
+            "top_3_pref_count": None,
+            "placed_pref_rank_avg": None,
+        })
+
+    history.sort(key=lambda x: int(x["year"]))
 
     # Add/Update 2026 entry from 2026 program scraper data
     if 2026 not in yearly_map:
