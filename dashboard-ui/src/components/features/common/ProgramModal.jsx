@@ -36,126 +36,137 @@ export function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmar
   if (!programCode) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-      <div className="glass-panel w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 shadow-2xl p-6 space-y-5">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
-          <div>
-            <Badge variant="indigo">{t('modal.programCode', { code: programCode })}</Badge>
-            <h2 className="text-xl font-bold text-white mt-1">{p?.birimAdi || t('modal.defaultTitle')}</h2>
-            <p className="text-sm font-medium text-slate-300">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-md">
+      <div className="glass-panel w-full max-w-5xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl border border-slate-700 shadow-2xl p-4 sm:p-6 space-y-4 sm:space-y-5 pb-safe animate-slide-up sm:animate-none">
+        {/* Sticky Header */}
+        <div className="sticky top-0 bg-slate-900/95 backdrop-blur-md z-20 -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 p-4 sm:p-6 border-b border-slate-800 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <Badge variant="indigo">{t('modal.programCode', { code: programCode })}</Badge>
+              {p?.bursOraniAdi && (
+                <span className="text-[10px] font-semibold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                  {p.bursOraniAdi}
+                </span>
+              )}
+            </div>
+            <h2 className="text-base sm:text-xl font-bold text-white mt-1 line-clamp-1">{p?.birimAdi || t('modal.defaultTitle')}</h2>
+            <p className="text-xs sm:text-sm font-medium text-slate-300 line-clamp-1">
               {p?.universiteAdi} ({p?.ilAdi})
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {p && (
               <button
                 onClick={() => onToggleBookmark(p)}
+                aria-label="Bookmark"
                 className={`p-2 rounded-xl border transition ${
                   isBookmarked
                     ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                    : 'bg-slate-800 border-slate-700 text-slate-300'
+                    : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
                 }`}
               >
-                <Bookmark className="w-5 h-5 fill-current" />
+                <Bookmark className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
               </button>
             )}
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+              aria-label="Close"
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
 
         {loading ? (
-          <Spinner message={t('modal.loading')} />
+          <div className="py-12">
+            <Spinner message={t('modal.loading')} />
+          </div>
         ) : p ? (
           <div className="space-y-5 text-xs text-slate-300">
             {/* Quick Metrics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <p className="text-slate-400">{t('modal.minRank2026')}</p>
-                <p className="text-base font-bold text-indigo-400">{formatRank(p.basariSirasi)}</p>
+                <p className="text-slate-400 text-[11px] sm:text-xs">{t('modal.minRank2026')}</p>
+                <p className="text-sm sm:text-base font-bold text-indigo-400 mt-0.5">{formatRank(p.basariSirasi)}</p>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <p className="text-slate-400">{t('modal.minScore2026')}</p>
-                <p className="text-base font-bold text-white">{formatScore(p.minPuan)}</p>
+                <p className="text-slate-400 text-[11px] sm:text-xs">{t('modal.minScore2026')}</p>
+                <p className="text-sm sm:text-base font-bold text-white mt-0.5">{formatScore(p.minPuan)}</p>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <p className="text-slate-400">{t('modal.quota')}</p>
-                <p className="text-base font-bold text-white">{p.kontenjan || '—'}</p>
+                <p className="text-slate-400 text-[11px] sm:text-xs">{t('modal.quota')}</p>
+                <p className="text-sm sm:text-base font-bold text-white mt-0.5">{p.kontenjan || '—'}</p>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <p className="text-slate-400">{t('modal.scoreField')}</p>
-                <p className="text-base font-bold text-cyan-400">{p.puanTuru}</p>
+                <p className="text-slate-400 text-[11px] sm:text-xs">{t('modal.scoreField')}</p>
+                <p className="text-sm sm:text-base font-bold text-cyan-400 mt-0.5">{p.puanTuru}</p>
               </div>
             </div>
 
             {/* Academic Staff */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
-              <h4 className="font-bold text-slate-200 flex items-center gap-2">
+            <div className="p-3.5 sm:p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+              <h4 className="font-bold text-slate-200 flex items-center gap-2 text-xs sm:text-sm">
                 <Users className="w-4 h-4 text-indigo-400" />
                 <span>{t('modal.academicStaff')}</span>
               </h4>
-              <div className="grid grid-cols-4 gap-2 text-center pt-1">
-                <div className="p-2 rounded-lg bg-slate-800">
-                  <span className="block font-bold text-white text-sm">{p.prof}</span>
-                  <span className="text-[10px] text-slate-400">{t('modal.professors')}</span>
+              <div className="grid grid-cols-4 gap-1.5 sm:gap-2 text-center pt-1">
+                <div className="p-2 rounded-lg bg-slate-800/80">
+                  <span className="block font-bold text-white text-xs sm:text-sm">{p.prof}</span>
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 truncate block">{t('modal.professors')}</span>
                 </div>
-                <div className="p-2 rounded-lg bg-slate-800">
-                  <span className="block font-bold text-white text-sm">{p.doc}</span>
-                  <span className="text-[10px] text-slate-400">{t('modal.assocProfs')}</span>
+                <div className="p-2 rounded-lg bg-slate-800/80">
+                  <span className="block font-bold text-white text-xs sm:text-sm">{p.doc}</span>
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 truncate block">{t('modal.assocProfs')}</span>
                 </div>
-                <div className="p-2 rounded-lg bg-slate-800">
-                  <span className="block font-bold text-white text-sm">{p.dou}</span>
-                  <span className="text-[10px] text-slate-400">{t('modal.asstProfs')}</span>
+                <div className="p-2 rounded-lg bg-slate-800/80">
+                  <span className="block font-bold text-white text-xs sm:text-sm">{p.dou}</span>
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 truncate block">{t('modal.asstProfs')}</span>
                 </div>
-                <div className="p-2 rounded-lg bg-slate-800">
-                  <span className="block font-bold text-white text-sm">{p.arGor}</span>
-                  <span className="text-[10px] text-slate-400">{t('modal.researchAsst')}</span>
+                <div className="p-2 rounded-lg bg-slate-800/80">
+                  <span className="block font-bold text-white text-xs sm:text-sm">{p.arGor}</span>
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 truncate block">{t('modal.researchAsst')}</span>
                 </div>
               </div>
             </div>
 
             {/* Accreditation & Threshold Conditions */}
             {p.minBasariSirasiKosul && (
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 space-y-1">
-                <div className="flex items-center gap-1.5 font-bold">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm">
                   <AlertTriangle className="w-4 h-4 text-amber-400" />
                   <span>{t('modal.thresholdTitle')}</span>
                 </div>
-                <p>{p.minBasariSirasiKosul}</p>
+                <p className="text-xs leading-relaxed">{p.minBasariSirasiKosul}</p>
               </div>
             )}
 
             {data.history?.length > 0 && (
-              <div className="pt-6 space-y-6 border-t border-slate-800 mt-6">
-                <div className="space-y-3">
+              <div className="pt-4 sm:pt-6 space-y-5 sm:space-y-6 border-t border-slate-800 mt-4 sm:mt-6">
+                <div className="space-y-2.5 sm:space-y-3">
                   <h4 className="font-bold text-slate-200 flex items-center gap-2">
                     <LineChart className="w-4 h-4 text-indigo-400" />
-                    <span className="text-sm">{t('modal.rankTrends')}</span>
+                    <span className="text-xs sm:text-sm">{t('modal.rankTrends')}</span>
                   </h4>
                   <RankTrajectoryChart chartData={chartData} />
                 </div>
                 
-                <div className="space-y-3">
+                <div className="space-y-2.5 sm:space-y-3">
                   <h4 className="font-bold text-slate-200 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-emerald-400" />
-                    <span className="text-sm">{t('modal.yoyChanges')}</span>
+                    <span className="text-xs sm:text-sm">{t('modal.yoyChanges')}</span>
                   </h4>
                   <YoYDeltaCards yoyDeltas={data.yoy_deltas} />
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2.5 sm:space-y-3">
                   <h4 className="font-bold text-slate-200 flex items-center gap-2">
                     <Table className="w-4 h-4 text-cyan-400" />
-                    <span className="text-sm">{t('modal.yoyTable')}</span>
+                    <span className="text-xs sm:text-sm">{t('modal.yoyTable')}</span>
                   </h4>
                   <YoYComparisonTable yoyComparisons={data.yoy_comparisons} />
                 </div>
@@ -163,10 +174,10 @@ export function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmar
             )}
 
             {data.net_stats?.length > 0 && (
-              <div className="pt-6 space-y-3 border-t border-slate-800 mt-6">
+              <div className="pt-4 sm:pt-6 space-y-2.5 sm:space-y-3 border-t border-slate-800 mt-4 sm:mt-6">
                 <h4 className="font-bold text-slate-200 flex items-center gap-2">
                   <Activity className="w-4 h-4 text-purple-400" />
-                  <span className="text-sm">{t('modal.netStats')}</span>
+                  <span className="text-xs sm:text-sm">{t('modal.netStats')}</span>
                 </h4>
                 <NetStatsTable netStats={data.net_stats} />
               </div>

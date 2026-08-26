@@ -8,7 +8,7 @@ export function NetStatsTable({ netStats }) {
   if (!netStats || netStats.length === 0) return null;
 
   return (
-    <div className="glass-panel p-6 rounded-2xl border border-slate-800">
+    <div className="glass-panel p-3.5 sm:p-6 rounded-2xl border border-slate-800">
       <div className="flex items-center gap-2 mb-4">
         <BookOpen className="w-5 h-5 text-indigo-400" />
         <h4 className="font-bold text-sm text-white">{t('trends.netStatsTitle')}</h4>

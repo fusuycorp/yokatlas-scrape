@@ -22,7 +22,8 @@ export function ProgramTable({
 
   return (
     <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
-      <div className="overflow-x-auto">
+      {/* Desktop Table View (>= md screens) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-xs text-slate-300">
           <thead className="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-800">
             <tr>
@@ -141,17 +142,125 @@ export function ProgramTable({
         </table>
       </div>
 
+      {/* Mobile Card List View (< md screens) */}
+      <div className="md:hidden">
+        {loading ? (
+          <div className="p-8">
+            <Spinner message={t('explorer.loading')} />
+          </div>
+        ) : programs.length === 0 ? (
+          <div className="py-12 text-center text-slate-500 text-xs">
+            {t('explorer.empty')}
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-800/80">
+            {programs.map((p) => {
+              const isBookmarked = bookmarkedIds.has(p.kilavuzKodu);
+              return (
+                <div key={p.kilavuzKodu} className="p-4 space-y-3 hover:bg-slate-800/20 transition-colors">
+                  {/* Card Header: Uni & Bookmark */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <button
+                        onClick={() => onSelectUniversity?.(p.universiteAdi)}
+                        className="font-semibold text-sm text-white light:text-slate-900 hover:text-indigo-400 hover:underline text-left transition cursor-pointer line-clamp-1"
+                      >
+                        {p.universiteAdi}
+                      </button>
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-1">
+                        <Badge variant={p.universiteTuru === 'DEVLET' ? 'emerald' : 'purple'}>
+                          {p.universiteTuru === 'DEVLET' ? t('explorer.stateUni') : p.universiteTuru === 'VAKIF' ? t('explorer.foundationUni') : p.universiteTuru}
+                        </Badge>
+                        <span>•</span>
+                        <span>{p.ilAdi}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => onToggleBookmark(p)}
+                      aria-label="Bookmark"
+                      className={`p-2.5 rounded-xl border transition shrink-0 ${
+                        isBookmarked
+                          ? 'text-amber-400 bg-amber-400/10 border-amber-400/30'
+                          : 'text-slate-400 bg-slate-900/80 border-slate-800 hover:text-slate-200'
+                      }`}
+                    >
+                      <Bookmark className="w-4 h-4 fill-current" />
+                    </button>
+                  </div>
+
+                  {/* Program Title */}
+                  <div>
+                    <button
+                      onClick={() => onSelectProgram(p.kilavuzKodu)}
+                      className="font-bold text-sm text-slate-100 hover:text-indigo-400 text-left transition cursor-pointer line-clamp-2"
+                    >
+                      {p.birimAdi}
+                    </button>
+                    {p.bursOraniAdi && (
+                      <span className="text-[11px] text-indigo-400 font-medium mt-0.5 block">
+                        {p.bursOraniAdi}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Metrics Grid */}
+                  <div className="grid grid-cols-3 gap-2 bg-slate-900/70 p-2.5 rounded-xl border border-slate-800/80 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-medium">{t('explorer.colField')}</span>
+                      <Badge variant="indigo" className="mt-0.5">{p.puanTuru}</Badge>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-medium">{t('explorer.colRank2026')}</span>
+                      <span className="font-bold text-indigo-300 text-xs block mt-0.5">
+                        {formatRank(p.basariSirasi)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-medium">{t('explorer.colScore2026')}</span>
+                      <span className="font-semibold text-slate-200 text-xs block mt-0.5">
+                        {formatScore(p.minPuan)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Quota & Action Button */}
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <div className="text-[11px] text-slate-400">
+                      <span>{t('explorer.colQuota')}: <strong className="text-slate-200">{p.kontenjan || '—'}</strong></span>
+                      <span className="mx-1.5">•</span>
+                      <span>{p.prof + p.doc} {t('comparator.assocAsst')}</span>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => onSelectProgram(p.kilavuzKodu)}
+                      className="shrink-0"
+                    >
+                      <Info className="w-3.5 h-3.5" />
+                      <span>{t('explorer.detailsBtn')}</span>
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Pagination Footer */}
-      <div className="p-4 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between">
-        <span className="text-xs text-slate-400">
+      <div className="p-3.5 sm:p-4 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between gap-2">
+        <span className="text-xs text-slate-400 font-medium">
           {t('explorer.pageInfo', { page, totalPages })}
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <Button
             size="sm"
             variant="ghost"
             disabled={page <= 1}
             onClick={() => onPageChange(page - 1)}
+            className="p-2 sm:px-3"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
@@ -160,6 +269,7 @@ export function ProgramTable({
             variant="ghost"
             disabled={page >= totalPages}
             onClick={() => onPageChange(page + 1)}
+            className="p-2 sm:px-3"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>

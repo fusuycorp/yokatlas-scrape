@@ -30,10 +30,10 @@ export function ProgramExplorerTab({ onSelectProgram, onSelectUniversity, onTogg
   } = usePrograms();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Overview Stat Cards */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
           <StatCard
             title={t('explorer.totalUniversities')}
             value={formatNumber(stats.total_universities)}

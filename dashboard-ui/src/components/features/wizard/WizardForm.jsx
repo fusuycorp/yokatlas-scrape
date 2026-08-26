@@ -16,16 +16,16 @@ export function WizardForm({ scoreType, onScoreTypeChange, targetRank, onTargetR
   ];
 
   return (
-    <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+    <div className="glass-panel p-4 sm:p-6 rounded-2xl border border-slate-800 space-y-3 sm:space-y-4 shadow-xl">
       <div className="flex items-center gap-2">
-        <GraduationCap className="w-6 h-6 text-indigo-400" />
-        <h2 className="text-lg font-bold text-white">{t('wizard.title')}</h2>
+        <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400" />
+        <h2 className="text-base sm:text-lg font-bold text-white">{t('wizard.title')}</h2>
       </div>
       <p className="text-xs text-slate-400">
         {t('wizard.description')}
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 pt-1 sm:pt-2">
         <div>
           <label className="block text-xs font-semibold text-slate-300 mb-1">{t('wizard.scoreTypeLabel')}</label>
           <Select options={options} value={scoreType} onChange={(e) => onScoreTypeChange(e.target.value)} className="w-full" />
@@ -41,8 +41,8 @@ export function WizardForm({ scoreType, onScoreTypeChange, targetRank, onTargetR
           />
         </div>
 
-        <div className="flex items-end">
-          <Button onClick={onSubmit} className="w-full">
+        <div className="flex items-end pt-1 md:pt-0">
+          <Button onClick={onSubmit} className="w-full py-2.5 sm:py-2">
             <Zap className="w-4 h-4" />
             <span>{t('wizard.generateBtn')}</span>
           </Button>

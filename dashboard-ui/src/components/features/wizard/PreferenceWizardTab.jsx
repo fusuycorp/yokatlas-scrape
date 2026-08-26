@@ -9,6 +9,7 @@ import { WizardCard } from './WizardCard';
 
 export function PreferenceWizardTab({ onSelectProgram, onToggleBookmark, bookmarkedIds }) {
   const { t } = useLanguage();
+  const [mobileCategory, setMobileCategory] = React.useState('all');
   const {
     scoreType,
     setScoreType,
@@ -20,7 +21,7 @@ export function PreferenceWizardTab({ onSelectProgram, onToggleBookmark, bookmar
   } = useWizard();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <WizardForm
         scoreType={scoreType}
         onScoreTypeChange={setScoreType}
@@ -30,11 +31,58 @@ export function PreferenceWizardTab({ onSelectProgram, onToggleBookmark, bookmar
       />
 
       {loading ? (
-        <Spinner message={t('wizard.loading')} />
+        <div className="py-12">
+          <Spinner message={t('wizard.loading')} />
+        </div>
       ) : wizardData?.categories ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Reach Options */}
-          <div className="space-y-4">
+        <div className="space-y-4">
+          {/* Mobile Category Segment Filter (< md screens) */}
+          <div className="md:hidden flex items-center bg-slate-900/90 p-1 rounded-2xl border border-slate-800 gap-1">
+            <button
+              onClick={() => setMobileCategory('all')}
+              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition ${
+                mobileCategory === 'all'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {t('explorer.allScoreTypes', 'Tümü')}
+            </button>
+            <button
+              onClick={() => setMobileCategory('reach')}
+              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition ${
+                mobileCategory === 'reach'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {t('wizard.reachTitle')} ({wizardData.categories.reach.programs.length})
+            </button>
+            <button
+              onClick={() => setMobileCategory('target')}
+              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition ${
+                mobileCategory === 'target'
+                  ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {t('wizard.targetTitle')} ({wizardData.categories.target.programs.length})
+            </button>
+            <button
+              onClick={() => setMobileCategory('safe')}
+              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition ${
+                mobileCategory === 'safe'
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {t('wizard.safeTitle')} ({wizardData.categories.safe.programs.length})
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+            {/* Reach Options */}
+            <div className={`space-y-4 ${mobileCategory !== 'all' && mobileCategory !== 'reach' ? 'hidden md:block' : ''}`}>
             <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-3">
               <div className="p-2 rounded-xl bg-amber-500/20 text-amber-300">
                 <Zap className="w-5 h-5" />
@@ -64,7 +112,7 @@ export function PreferenceWizardTab({ onSelectProgram, onToggleBookmark, bookmar
           </div>
 
           {/* Target Options */}
-          <div className="space-y-4">
+          <div className={`space-y-4 ${mobileCategory !== 'all' && mobileCategory !== 'target' ? 'hidden md:block' : ''}`}>
             <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-3">
               <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300">
                 <Target className="w-5 h-5" />
@@ -94,7 +142,7 @@ export function PreferenceWizardTab({ onSelectProgram, onToggleBookmark, bookmar
           </div>
 
           {/* Safe Options */}
-          <div className="space-y-4">
+          <div className={`space-y-4 ${mobileCategory !== 'all' && mobileCategory !== 'safe' ? 'hidden md:block' : ''}`}>
             <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3">
               <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
                 <ShieldCheck className="w-5 h-5" />
@@ -123,6 +171,7 @@ export function PreferenceWizardTab({ onSelectProgram, onToggleBookmark, bookmar
             </div>
           </div>
         </div>
+      </div>
       ) : null}
     </div>
   );

@@ -12,15 +12,15 @@ export function StatCard({ title, value, icon: Icon, color = 'indigo' }) {
   };
 
   return (
-    <div className="glass-card p-4 rounded-2xl border border-slate-800 flex items-center gap-3">
+    <div className="glass-card p-3 sm:p-4 rounded-2xl border border-slate-800 flex items-center gap-2.5 sm:gap-3 min-w-0">
       {Icon && (
-        <div className={`p-3 rounded-xl border ${colorMap[color] || colorMap.indigo}`}>
-          <Icon className="w-6 h-6" />
+        <div className={`p-2 sm:p-3 rounded-xl border shrink-0 ${colorMap[color] || colorMap.indigo}`}>
+          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
       )}
-      <div>
-        <p className="text-xs text-slate-400 font-medium">{title}</p>
-        <h3 className="text-xl font-bold text-white">{value}</h3>
+      <div className="min-w-0 truncate">
+        <p className="text-[11px] sm:text-xs text-slate-400 font-medium truncate">{title}</p>
+        <h3 className="text-base sm:text-xl font-bold text-white tracking-tight truncate">{value}</h3>
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ import React from 'react';
 export function Select({ options = [], className = '', ...props }) {
   return (
     <select
-      className={`px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700/70 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition ${className}`}
+      className={`px-3 py-2.5 sm:py-2 rounded-xl bg-slate-900/90 border border-slate-700/70 text-base sm:text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition ${className}`}
       {...props}
     >
       {options.map((opt) => (

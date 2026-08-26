@@ -7,15 +7,15 @@ export function WizardCard({ program, onSelect, onToggleBookmark, isBookmarked }
   const { t } = useLanguage();
 
   return (
-    <div className="glass-card p-4 rounded-2xl border border-slate-800 hover:border-indigo-500/40 transition space-y-2">
+    <div className="glass-card p-3.5 sm:p-4 rounded-2xl border border-slate-800 hover:border-indigo-500/40 transition space-y-2 shadow-md">
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <span className="text-[10px] font-bold text-slate-400 uppercase">
+        <div className="min-w-0">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
             {program.universiteTuru === 'DEVLET' ? t('explorer.stateUni') : program.universiteTuru === 'VAKIF' ? t('explorer.foundationUni') : program.universiteTuru} • {program.ilAdi}
           </span>
           <button
             onClick={() => onSelect(program.kilavuzKodu)}
-            className="font-bold text-xs text-white line-clamp-1 cursor-pointer hover:underline hover:text-indigo-400 text-left transition"
+            className="font-bold text-xs sm:text-sm text-white line-clamp-1 cursor-pointer hover:underline hover:text-indigo-400 text-left transition block mt-0.5"
           >
             {program.birimAdi}
           </button>
@@ -24,11 +24,12 @@ export function WizardCard({ program, onSelect, onToggleBookmark, isBookmarked }
 
         <button
           onClick={() => onToggleBookmark(program)}
-          className={`p-1.5 rounded-lg shrink-0 ${
-            isBookmarked ? 'text-amber-400 bg-amber-400/10' : 'text-slate-500 hover:text-slate-300'
+          aria-label="Bookmark"
+          className={`p-2 sm:p-2.5 rounded-xl shrink-0 transition border ${
+            isBookmarked ? 'text-amber-400 bg-amber-400/10 border-amber-400/30' : 'text-slate-400 bg-slate-900/60 border-slate-800 hover:text-slate-200'
           }`}
         >
-          <Bookmark className="w-3.5 h-3.5 fill-current" />
+          <Bookmark className="w-4 h-4 fill-current" />
         </button>
       </div>
 

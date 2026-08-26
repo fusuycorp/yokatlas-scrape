@@ -15,7 +15,7 @@ export function YoYComparisonTable({ yoyComparisons }) {
   if (!yoyComparisons || yoyComparisons.length === 0) return null;
 
   return (
-    <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+    <div className="glass-panel p-3.5 sm:p-6 rounded-2xl border border-slate-800 space-y-3 sm:space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <TableIcon className="w-5 h-5 text-indigo-400" />

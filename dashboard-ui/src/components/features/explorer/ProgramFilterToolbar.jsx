@@ -52,10 +52,10 @@ export function ProgramFilterToolbar({
   const uniArray = uniType ? uniType.split(',') : [];
 
   return (
-    <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col gap-4">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Search */}
-        <div className="w-full md:w-80">
+    <div className="glass-panel p-3.5 sm:p-5 rounded-2xl border border-slate-800 flex flex-col gap-3 sm:gap-4 shadow-lg">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        {/* Search Input */}
+        <div className="w-full sm:w-80 lg:w-96">
           <Input
             icon={Search}
             placeholder={t('explorer.searchPlaceholder')}
@@ -64,7 +64,8 @@ export function ProgramFilterToolbar({
           />
         </div>
 
-        <div className="flex items-center gap-4 w-full md:w-auto md:ml-auto">
+        {/* Per-Page & Total Count */}
+        <div className="flex items-center justify-between sm:justify-end gap-3 sm:ml-auto">
           <Select
             options={[
               { value: 10, label: t('explorer.perPage', { count: 10 }) },
@@ -74,15 +75,18 @@ export function ProgramFilterToolbar({
             ]}
             value={limit}
             onChange={(e) => onLimitChange(Number(e.target.value))}
+            className="w-32 sm:w-auto"
           />
-          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+          <span className="text-xs text-slate-400 font-medium whitespace-nowrap bg-slate-900/60 px-3 py-2 rounded-xl border border-slate-800/80">
             {t('explorer.total')}: <strong className="text-white">{formatNumber(totalCount)}</strong>
           </span>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 pt-3 border-t border-slate-800/50">
-        <div className="flex flex-wrap items-center gap-2">
+      {/* Filter Pills */}
+      <div className="flex flex-col gap-2.5 pt-3 border-t border-slate-800/60">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <span className="text-[11px] text-slate-500 font-medium mr-1 hidden sm:inline">{t('universityModal.filterScoreType')}:</span>
           {scoreTypesList.map(opt => (
             <TogglePill
               key={opt.value}
@@ -92,7 +96,8 @@ export function ProgramFilterToolbar({
             />
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <span className="text-[11px] text-slate-500 font-medium mr-1 hidden sm:inline">{t('explorer.stateVsVakif')}:</span>
           {uniTypesList.map(opt => {
             let label = opt.label;
             if (opt.value === 'DEVLET') label = t('explorer.stateUni');

@@ -9,18 +9,24 @@ export function FacultyChart({ comparisonData }) {
   if (!comparisonData || !comparisonData.comparison) return null;
 
   return (
-    <div className="glass-panel p-6 rounded-2xl border border-slate-800">
-      <div className="flex items-center gap-2 mb-4">
+    <div className="glass-panel p-3.5 sm:p-6 rounded-2xl border border-slate-800">
+      <div className="flex items-center gap-2 mb-3 sm:mb-4">
         <BarChart3 className="w-5 h-5 text-indigo-400" />
-        <h3 className="font-bold text-sm text-white">{t('comparator.facultyStrengthTitle')}</h3>
+        <h3 className="font-bold text-xs sm:text-sm text-white">{t('comparator.facultyStrengthTitle')}</h3>
       </div>
-      <div className="h-64">
+      <div className="h-60 sm:h-64 -ml-2 sm:ml-0">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={comparisonData.comparison}>
-            <XAxis dataKey="universiteAdi" stroke="#64748b" tick={{ fontSize: 10 }} interval={0} />
-            <YAxis stroke="#64748b" />
-            <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }} />
-            <Legend />
+          <BarChart data={comparisonData.comparison} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+            <XAxis
+              dataKey="universiteAdi"
+              stroke="#64748b"
+              tick={{ fontSize: 10 }}
+              interval={0}
+              tickFormatter={(val) => (val && val.length > 12 ? `${val.slice(0, 10)}…` : val)}
+            />
+            <YAxis stroke="#64748b" tick={{ fontSize: 10 }} width={40} />
+            <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }} />
+            <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
             <Bar dataKey="total_prof" name={t('comparator.professorsLegend')} fill="#818cf8" radius={[4, 4, 0, 0]} />
             <Bar dataKey="total_doc" name={t('comparator.assocProfsLegend')} fill="#38bdf8" radius={[4, 4, 0, 0]} />
             <Bar dataKey="total_argor" name={t('comparator.researchAsstLegend')} fill="#34d399" radius={[4, 4, 0, 0]} />
