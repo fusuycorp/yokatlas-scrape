@@ -1,5 +1,5 @@
 # Stage 1: Build React Frontend with Bun (No Node)
-FROM oven/bun:1-alpine AS frontend-builder
+FROM --platform=$BUILDPLATFORM oven/bun:1-alpine AS frontend-builder
 WORKDIR /app/dashboard-ui
 COPY dashboard-ui/package*.json ./
 RUN bun install
