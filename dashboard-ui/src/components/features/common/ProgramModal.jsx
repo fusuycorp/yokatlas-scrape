@@ -5,10 +5,13 @@ import { useLanguage } from '../../../hooks/useLanguage';
 import { formatRank, formatScore } from '../../../utils/formatters';
 import { Spinner } from '../../ui/Spinner';
 import { Badge } from '../../ui/Badge';
-import { RankTrajectoryChart } from '../trends/RankTrajectoryChart';
 import { YoYDeltaCards } from '../trends/YoYDeltaCards';
 import { YoYComparisonTable } from '../trends/YoYComparisonTable';
 import { NetStatsTable } from '../trends/NetStatsTable';
+
+const RankTrajectoryChart = React.lazy(() =>
+  import('../trends/RankTrajectoryChart').then((m) => ({ default: m.RankTrajectoryChart }))
+);
 
 export function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmarked }) {
   const { data, loading } = useTrends(programCode);
@@ -184,7 +187,9 @@ export function ProgramModal({ programCode, onClose, onToggleBookmark, isBookmar
                     <LineChart className="w-4 h-4 text-indigo-400" />
                     <span className="text-xs sm:text-sm">{t('modal.rankTrends')}</span>
                   </h4>
-                  <RankTrajectoryChart chartData={chartData} />
+                  <React.Suspense fallback={<Spinner />}>
+                    <RankTrajectoryChart chartData={chartData} />
+                  </React.Suspense>
                 </div>
                 
                 <div className="space-y-2.5 sm:space-y-3">

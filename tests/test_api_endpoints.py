@@ -106,6 +106,9 @@ class TestGlobalStatsAPI:
         assert "total_universities" in data
         assert "total_programs" in data
         assert "total_cities" in data
+        assert "cities" in data
+        assert isinstance(data["cities"], list)
+        assert len(data["cities"]) == data["total_cities"]
         assert "university_types" in data
         assert "score_types" in data
 

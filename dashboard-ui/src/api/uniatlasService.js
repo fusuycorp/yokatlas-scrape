@@ -28,8 +28,9 @@ export const uniatlasService = {
   /**
    * Searches and filters 2026 scraped programs.
    * @param {Object} filters
+   * @param {RequestInit} [options]
    */
-  getPrograms(filters = {}) {
+  getPrograms(filters = {}, options = {}) {
     const query = new URLSearchParams();
     if (filters.page) query.append('page', filters.page);
     if (filters.limit) query.append('limit', filters.limit);
@@ -40,7 +41,7 @@ export const uniatlasService = {
     if (filters.uni_type) query.append('uni_type', filters.uni_type);
     if (filters.city) query.append('city', filters.city);
 
-    return apiClient(`/programs?${query.toString()}`);
+    return apiClient(`/programs?${query.toString()}`, options);
   },
 
   /**

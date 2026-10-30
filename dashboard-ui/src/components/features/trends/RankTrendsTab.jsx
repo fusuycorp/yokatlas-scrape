@@ -7,10 +7,13 @@ import { Spinner } from '../../ui/Spinner';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
-import { RankTrajectoryChart } from './RankTrajectoryChart';
 import { NetStatsTable } from './NetStatsTable';
 import { YoYDeltaCards } from './YoYDeltaCards';
 import { YoYComparisonTable } from './YoYComparisonTable';
+
+const RankTrajectoryChart = React.lazy(() =>
+  import('./RankTrajectoryChart').then((m) => ({ default: m.RankTrajectoryChart }))
+);
 
 export function RankTrendsTab({ selectedProgramCode }) {
   const { setProgCode, data, loading } = useTrends(selectedProgramCode);
@@ -112,7 +115,9 @@ export function RankTrendsTab({ selectedProgramCode }) {
           <YoYComparisonTable yoyComparisons={data.yoy_comparisons} />
 
           {/* Cutoff Rank Trajectory Line Chart */}
-          <RankTrajectoryChart chartData={chartData} />
+          <React.Suspense fallback={<Spinner />}>
+            <RankTrajectoryChart chartData={chartData} />
+          </React.Suspense>
 
           {/* Net Score Statistics Table */}
           <NetStatsTable netStats={data.net_stats} />

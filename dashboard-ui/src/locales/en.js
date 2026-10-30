@@ -19,6 +19,7 @@ export const en = {
     searchPlaceholder: 'Search university, program...',
     allScoreTypes: 'All Score Types',
     allUniTypes: 'All Uni Types',
+    allCities: 'All Cities',
     stateUni: 'State',
     foundationUni: 'Foundation',
     kktcUni: 'TRNC Universities',

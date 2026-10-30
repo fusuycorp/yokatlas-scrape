@@ -19,6 +19,7 @@ export const tr = {
     searchPlaceholder: 'Üniversite, program ara...',
     allScoreTypes: 'Tüm Puan Türleri',
     allUniTypes: 'Tüm Üniversite Türleri',
+    allCities: 'Tüm İller',
     stateUni: 'Devlet',
     foundationUni: 'Vakıf',
     kktcUni: 'KKTC Üniversiteleri',

@@ -29,6 +29,9 @@ export function ProgramFilterToolbar({
   onScoreTypeChange,
   uniType,
   onUniTypeChange,
+  city,
+  onCityChange,
+  cities = [],
   limit,
   onLimitChange,
   totalCount,
@@ -51,17 +54,32 @@ export function ProgramFilterToolbar({
   const scoreArray = scoreType ? scoreType.split(',') : [];
   const uniArray = uniType ? uniType.split(',') : [];
 
+  const cityOptions = [
+    { value: '', label: t('explorer.allCities') },
+    ...cities.map((c) => ({ value: c, label: c })),
+  ];
+
   return (
     <div className="glass-panel p-3.5 sm:p-5 rounded-2xl border border-slate-800 flex flex-col gap-3 sm:gap-4 shadow-lg">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        {/* Search Input */}
-        <div className="w-full sm:w-80 lg:w-96">
-          <Input
-            icon={Search}
-            placeholder={t('explorer.searchPlaceholder')}
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
+        {/* Search Input & City Select */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto flex-1">
+          <div className="w-full sm:w-72 lg:w-80">
+            <Input
+              icon={Search}
+              placeholder={t('explorer.searchPlaceholder')}
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
+          </div>
+          {cities.length > 0 && (
+            <Select
+              options={cityOptions}
+              value={city || ''}
+              onChange={(e) => onCityChange?.(e.target.value)}
+              className="w-full sm:w-44"
+            />
+          )}
         </div>
 
         {/* Per-Page & Total Count */}

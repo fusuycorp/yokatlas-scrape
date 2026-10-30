@@ -125,6 +125,9 @@ def build_unified_database():
     if kaggle_admissions.exists():
         print("Loading Kaggle 2019-2024 Admissions data...")
         df_kaggle = pd.read_csv(kaggle_admissions)
+        df_kaggle["uni_norm"] = df_kaggle["university_name"].fillna("").map(tr_normalize)
+        df_kaggle["dept_norm"] = df_kaggle["department_name"].fillna("").map(tr_normalize)
+        df_kaggle["tags_norm"] = df_kaggle["all_tags"].fillna("").map(tr_normalize)
         df_kaggle.to_sql("admissions_history", conn, if_exists="replace", index=False)
         print(f"Loaded {len(df_kaggle)} historical records into 'admissions_history'")
     else:
@@ -134,6 +137,13 @@ def build_unified_database():
                 year INTEGER,
                 program_code INTEGER,
                 university_name TEXT,
+                department_name TEXT,
+                score_type TEXT,
+                scholarship_type TEXT,
+                all_tags TEXT,
+                uni_norm TEXT,
+                dept_norm TEXT,
+                tags_norm TEXT,
                 total_quota INTEGER,
                 total_enrolled INTEGER,
                 male INTEGER,
@@ -188,6 +198,7 @@ def build_unified_database():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_hist_code ON admissions_history(program_code);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_hist_year ON admissions_history(year);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_hist_uni ON admissions_history(university_name);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_hist_norm ON admissions_history(score_type, uni_norm, dept_norm, scholarship_type, tags_norm, program_code);")
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_net_code ON net_stats_history(program_code);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_net_year ON net_stats_history(year);")

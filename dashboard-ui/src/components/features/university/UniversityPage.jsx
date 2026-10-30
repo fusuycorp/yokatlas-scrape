@@ -17,7 +17,10 @@ import { formatRank, formatScore, formatNumber } from '../../../utils/formatters
 import { Spinner } from '../../ui/Spinner';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
-import { ProgramModal } from '../common/ProgramModal';
+
+const ProgramModal = React.lazy(() =>
+  import('../common/ProgramModal').then((m) => ({ default: m.ProgramModal }))
+);
 
 export function UniversityPage({
   uniName,
@@ -428,12 +431,14 @@ export function UniversityPage({
 
       {/* Program Inspection Modal (Opens over the University Page) */}
       {inspectProgramCode && (
-        <ProgramModal
-          programCode={inspectProgramCode}
-          onClose={() => setInspectProgramCode(null)}
-          onToggleBookmark={onToggleBookmark}
-          isBookmarked={bookmarkedIds.has(inspectProgramCode)}
-        />
+        <React.Suspense fallback={null}>
+          <ProgramModal
+            programCode={inspectProgramCode}
+            onClose={() => setInspectProgramCode(null)}
+            onToggleBookmark={onToggleBookmark}
+            isBookmarked={bookmarkedIds.has(inspectProgramCode)}
+          />
+        </React.Suspense>
       )}
     </div>
   );

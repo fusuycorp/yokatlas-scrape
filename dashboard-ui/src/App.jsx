@@ -4,17 +4,28 @@ import { useBookmarks } from './hooks/useBookmarks';
 import { useLanguage } from './hooks/useLanguage';
 import { Navbar } from './components/features/common/Navbar';
 import { Footer } from './components/features/common/Footer';
-import { ProgramModal } from './components/features/common/ProgramModal';
-import { UniversityPage } from './components/features/university/UniversityPage';
 import { ProgramExplorerTab } from './components/features/explorer/ProgramExplorerTab';
-import { UniComparatorTab } from './components/features/comparator/UniComparatorTab';
-import { RankTrendsTab } from './components/features/trends/RankTrendsTab';
-import { PreferenceWizardTab } from './components/features/wizard/PreferenceWizardTab';
 import { PreferenceDrawer } from './components/features/bookmarks/PreferenceDrawer';
 import { slugifyUniversity, unslugifyUniversity } from './utils/slugs';
 import { SeoHead } from './components/SeoHead';
 import { uniatlasService } from './api/uniatlasService';
 import { Spinner } from './components/ui/Spinner';
+
+const ProgramModal = React.lazy(() =>
+  import('./components/features/common/ProgramModal').then((m) => ({ default: m.ProgramModal }))
+);
+const UniversityPage = React.lazy(() =>
+  import('./components/features/university/UniversityPage').then((m) => ({ default: m.UniversityPage }))
+);
+const UniComparatorTab = React.lazy(() =>
+  import('./components/features/comparator/UniComparatorTab').then((m) => ({ default: m.UniComparatorTab }))
+);
+const RankTrendsTab = React.lazy(() =>
+  import('./components/features/trends/RankTrendsTab').then((m) => ({ default: m.RankTrendsTab }))
+);
+const PreferenceWizardTab = React.lazy(() =>
+  import('./components/features/wizard/PreferenceWizardTab').then((m) => ({ default: m.PreferenceWizardTab }))
+);
 
 const UniversityPageWrapper = ({ onToggleBookmark, bookmarkedIds }) => {
   const { uniSlug } = useParams();
@@ -119,6 +130,7 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 md:pb-8 space-y-5 sm:space-y-6">
+        <React.Suspense fallback={<div className="p-12"><Spinner /></div>}>
         <Routes>
           <Route path="/" element={
             <>
@@ -202,6 +214,7 @@ export default function App() {
             </>
           } />
         </Routes>
+        </React.Suspense>
       </main>
 
       <Footer />

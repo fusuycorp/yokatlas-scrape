@@ -152,14 +152,17 @@ def _global_stats_cached():
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("SELECT COUNT(DISTINCT universiteAdi) FROM programs_2026")
-    total_unis = c.fetchone()[0]
+    c.execute("""
+        SELECT COUNT(DISTINCT universiteAdi) as total_unis,
+               COUNT(*) as total_programs,
+               COUNT(DISTINCT CASE WHEN ilAdi IS NOT NULL AND ilAdi != '' THEN ilAdi END) as total_cities
+        FROM programs_2026
+    """)
+    row = c.fetchone()
+    total_unis, total_programs, total_cities = row[0], row[1], row[2]
 
-    c.execute("SELECT COUNT(*) FROM programs_2026")
-    total_programs = c.fetchone()[0]
-
-    c.execute("SELECT COUNT(DISTINCT ilAdi) FROM programs_2026 WHERE ilAdi IS NOT NULL AND ilAdi != ''")
-    total_cities = c.fetchone()[0]
+    c.execute("SELECT DISTINCT ilAdi FROM programs_2026 WHERE ilAdi IS NOT NULL AND ilAdi != '' ORDER BY ilAdi")
+    cities_list = [r[0] for r in c.fetchall()]
 
     c.execute("SELECT universiteTuru, COUNT(*) FROM programs_2026 GROUP BY universiteTuru")
     type_counts = dict(c.fetchall())
@@ -173,6 +176,7 @@ def _global_stats_cached():
         "total_universities": total_unis,
         "total_programs": total_programs,
         "total_cities": total_cities,
+        "cities": cities_list,
         "university_types": type_counts,
         "score_types": score_type_counts,
     }
@@ -517,12 +521,12 @@ def get_program_trends(program_code: int):
         score_type = prog_dict.get("puanTuru")
 
         norm_dept = tr_normalize(raw_dept)
-        conditions = ["TR_NORM(university_name) LIKE ?", "TR_NORM(department_name) LIKE ?"]
+        conditions = ["uni_norm LIKE ?", "dept_norm LIKE ?"]
         params = [f"%{tr_normalize(uni_name)}%", f"%{tr_normalize(base_dept)}%"]
 
-        # Medium of instruction lives in all_tags, not department_name (e.g. "Bilgisayar Mühendisliği").
+        # Medium of instruction lives in all_tags (persisted as tags_norm), not department_name.
         if "(ingilizce)" in norm_dept:
-            conditions.append("TR_NORM(all_tags) LIKE ?")
+            conditions.append("tags_norm LIKE ?")
             params.append("%ingilizce%")
 
         if score_type:

@@ -4,11 +4,12 @@ import { useCompare } from '../../../hooks/useCompare';
 import { useLanguage } from '../../../hooks/useLanguage';
 import { Spinner } from '../../ui/Spinner';
 import { UniComparisonCards } from './UniComparisonCards';
-import { FacultyChart } from './FacultyChart';
 import { trIncludes } from '../../../utils/turkish';
 
+const FacultyChart = React.lazy(() => import('./FacultyChart').then((m) => ({ default: m.FacultyChart })));
+
 export function UniComparatorTab({ onSelectUniversity }) {
-  const { allUnis, selectedUnis, comparisonData, loading, addUniversity, removeUniversity } = useCompare();
+  const { allUnis, selectedUnis, comparisonData, loading, error, addUniversity, removeUniversity } = useCompare();
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -80,10 +81,16 @@ export function UniComparatorTab({ onSelectUniversity }) {
       {/* Main Comparison Grid */}
       {loading ? (
         <Spinner message={t('comparator.loading')} />
+      ) : error ? (
+        <div className="glass-panel p-6 text-center text-red-400 bg-red-500/10 rounded-2xl border border-red-500/20 text-sm">
+          {error}
+        </div>
       ) : (
         <div className="space-y-6">
           <UniComparisonCards comparisonData={comparisonData} onSelectUniversity={onSelectUniversity} />
-          <FacultyChart comparisonData={comparisonData} />
+          <React.Suspense fallback={<Spinner />}>
+            <FacultyChart comparisonData={comparisonData} />
+          </React.Suspense>
         </div>
       )}
     </div>

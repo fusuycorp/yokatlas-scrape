@@ -24,6 +24,8 @@ export function ProgramExplorerTab({ onSelectProgram, onSelectUniversity, onTogg
     setScoreType,
     uniType,
     setUniType,
+    city,
+    setCity,
     toggleSort,
     limit,
     setLimit,
@@ -78,6 +80,12 @@ export function ProgramExplorerTab({ onSelectProgram, onSelectUniversity, onTogg
           setUniType(val);
           setPage(1);
         }}
+        city={city}
+        onCityChange={(val) => {
+          setCity(val);
+          setPage(1);
+        }}
+        cities={stats?.cities || []}
         limit={limit}
         onLimitChange={(val) => {
           setLimit(val);
