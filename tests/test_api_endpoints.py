@@ -301,6 +301,15 @@ class TestProgramsAPI:
         for p in data["programs"]:
             assert p["ilAdi"] == city
 
+    def test_get_programs_filter_city_multi(self):
+        """Filter by multiple comma-separated city names."""
+        response = client.get("/api/programs?city=İSTANBUL,ANKARA&limit=50")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] > 0
+        for p in data["programs"]:
+            assert p["ilAdi"] in ["İSTANBUL", "ANKARA"]
+
     def test_get_programs_filter_rank_range(self):
         """Filter by min_rank and max_rank boundaries."""
         min_r = 5000

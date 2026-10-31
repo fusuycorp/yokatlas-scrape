@@ -12,7 +12,7 @@ Current priority order (resume here in a fresh session):
 - **Catch-all file serving is constrained**: resolve + `is_relative_to(frontend_dist.resolve())`; `Path(base) / "/abs"` discards the base entirely, and `//etc/passwd` survives proxies.
 
 ## Domain Vocabulary & Gotchas
-- `admissions_history.medium-of-instruction` lives in `all_tags` (persisted normalized in `tags_norm`), NOT `department_name`. English-medium fallback filtering matches `tags_norm LIKE '%ingilizce%'` using covering index `idx_hist_norm(score_type, uni_norm, dept_norm, scholarship_type, tags_norm, program_code)`.
+- `admissions_history.medium-of-instruction` lives in `all_tags` (persisted normalized in `tags_norm`), NOT `department_name`. At DB build time (`build_unified_db.py`), fallback mappings from 2026 `kilavuzKodu` to historical `program_code` are precomputed into `program_code_map(code_2026, historical_code)` for $O(1)$ lookup in `/api/trends/{code}`.
 - Historical scholarship tiers are in `admissions_history.scholarship_type`; 2026 `bursOraniAdi` maps 1:1 to it, and state unis (bursOraniAdi NULL) map to `'Ücretsiz'`. Bug: matching fallback trend history without the tier filter blends unrelated Burslu/Ücretli series.
 - `programs_2026` rows average 3.7 KB → any `SCAN` touches ~80 MB. The landing `ORDER BY basariSirasi IS NULL, basariSirasi` needs expression indexes (`idx_p2026_*_sira_nulls`); `ANALYZE` must run after index creation.
 - `title_turkish` capitalization must skip leading punctuation via `\w` (Turkish letters), not `[a-z]` — `w.capitalize()` only uppercases index 0.

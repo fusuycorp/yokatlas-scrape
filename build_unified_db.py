@@ -200,6 +200,66 @@ def build_unified_database():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_hist_uni ON admissions_history(university_name);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_hist_norm ON admissions_history(score_type, uni_norm, dept_norm, scholarship_type, tags_norm, program_code);")
 
+    # 3b. Precompute static 2026 -> Historical Program Code Mapping
+    print("Precomputing static program_code_map for fallback historical trends...")
+    cursor.execute("DROP TABLE IF EXISTS program_code_map;")
+    cursor.execute("""
+        CREATE TABLE program_code_map (
+            code_2026 INTEGER NOT NULL,
+            historical_code INTEGER NOT NULL,
+            PRIMARY KEY (code_2026, historical_code)
+        )
+    """)
+
+    cursor.execute("""
+        SELECT p.kilavuzKodu, p.universiteAdi, p.birimAdi, p.puanTuru, p.bursOraniAdi
+        FROM programs_2026 p
+        LEFT JOIN (SELECT DISTINCT program_code FROM admissions_history) h
+          ON p.kilavuzKodu = h.program_code
+        WHERE h.program_code IS NULL
+    """)
+    missing_progs = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT DISTINCT program_code, score_type, scholarship_type, uni_norm, dept_norm, tags_norm
+        FROM admissions_history
+    """)
+    hist_progs = cursor.fetchall()
+
+    by_score = {}
+    for hp in hist_progs:
+        st = hp[1]
+        if st:
+            by_score.setdefault(st, []).append(hp)
+
+    mapping_rows = []
+    for code_2026, uni_raw, dept_raw, score_type, burs_raw in missing_progs:
+        uni_name = (uni_raw or "").split("(")[0].strip()
+        raw_dept = (dept_raw or "").strip()
+        base_dept = raw_dept.split("(")[0].strip()
+        norm_uni = tr_normalize(uni_name)
+        norm_base_dept = tr_normalize(base_dept)
+        norm_dept = tr_normalize(raw_dept)
+        need_eng = "(ingilizce)" in norm_dept
+        tier_value = burs_raw or "Ücretsiz"
+
+        candidates = by_score.get(score_type, []) if score_type else hist_progs
+        matched = [
+            hp for hp in candidates
+            if norm_uni in (hp[3] or "")
+            and norm_base_dept in (hp[4] or "")
+            and (not need_eng or "ingilizce" in (hp[5] or ""))
+        ]
+        if matched:
+            tier_matched = [hp[0] for hp in matched if hp[2] == tier_value]
+            final_codes = sorted(set(tier_matched if tier_matched else [hp[0] for hp in matched]))
+            for hc in final_codes:
+                mapping_rows.append((code_2026, hc))
+
+    cursor.executemany("INSERT INTO program_code_map (code_2026, historical_code) VALUES (?, ?)", mapping_rows)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_code_map_2026 ON program_code_map(code_2026);")
+    print(f"Precomputed {len(mapping_rows)} fallback mappings into 'program_code_map'")
+
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_net_code ON net_stats_history(program_code);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_net_year ON net_stats_history(year);")
 

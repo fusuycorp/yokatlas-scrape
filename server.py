@@ -336,8 +336,14 @@ def get_programs(
         params.append(university)
 
     if city:
-        conditions.append("ilAdi = ?")
-        params.append(city)
+        c_list = [ct.strip() for ct in city.split(",") if ct.strip()]
+        if len(c_list) == 1:
+            conditions.append("ilAdi = ?")
+            params.append(c_list[0])
+        elif len(c_list) > 1:
+            placeholders = ",".join("?" for _ in c_list)
+            conditions.append(f"ilAdi IN ({placeholders})")
+            params.extend(c_list)
 
     if score_type:
         st_list = [s.strip() for s in score_type.split(",") if s.strip()]
@@ -513,39 +519,10 @@ def get_program_trends(program_code: int):
     """, (program_code,))
     history = [dict(r) for r in c.fetchall()]
 
-    # Fallback: if program code changed across years (e.g. Boğaziçi YBS), match by university & department name
+    # Fallback: if program code changed across years (e.g. Boğaziçi YBS), look up precomputed program_code_map
     if not history:
-        uni_name = prog_dict.get("universiteAdi", "").split("(")[0].strip()
-        raw_dept = prog_dict.get("birimAdi", "").strip()
-        base_dept = raw_dept.split("(")[0].strip()
-        score_type = prog_dict.get("puanTuru")
-
-        norm_dept = tr_normalize(raw_dept)
-        conditions = ["uni_norm LIKE ?", "dept_norm LIKE ?"]
-        params = [f"%{tr_normalize(uni_name)}%", f"%{tr_normalize(base_dept)}%"]
-
-        # Medium of instruction lives in all_tags (persisted as tags_norm), not department_name.
-        if "(ingilizce)" in norm_dept:
-            conditions.append("tags_norm LIKE ?")
-            params.append("%ingilizce%")
-
-        if score_type:
-            conditions.append("score_type = ?")
-            params.append(score_type)
-
-        def _match(conds, prms):
-            where_clause = " AND ".join(conds)
-            c.execute(f"SELECT DISTINCT program_code FROM admissions_history WHERE {where_clause}", prms)
-            return [row["program_code"] for row in c.fetchall()]
-
-        matched_codes = _match(conditions, params)
-        if matched_codes:
-            # Match within the same scholarship tier so unrelated series (Burslu vs Ücretli) never mix.
-            # State universities have no bursOraniAdi; history records them as 'Ücretsiz'.
-            tier_value = prog_dict.get("bursOraniAdi") or "Ücretsiz"
-            tier_codes = _match(conditions + ["scholarship_type = ?"], params + [tier_value])
-            if tier_codes:
-                matched_codes = tier_codes
+        c.execute("SELECT historical_code FROM program_code_map WHERE code_2026 = ? ORDER BY historical_code ASC", (program_code,))
+        matched_codes = [row["historical_code"] for row in c.fetchall()]
 
         if matched_codes:
             placeholders = ",".join("?" for _ in matched_codes)
