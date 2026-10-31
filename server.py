@@ -8,6 +8,7 @@ import json
 import shutil
 import sqlite3
 import re
+import threading
 from functools import lru_cache
 from html import escape as html_escape
 from pathlib import Path
@@ -125,13 +126,20 @@ def tr_normalize(text):
     return text.translate(tr_map)
 
 
+_db_decompress_lock = threading.Lock()
+
+
 def decompress_db_if_needed(db_path: Path, gz_path: Path):
     if not db_path.exists() or db_path.stat().st_size == 0:
-        if gz_path.exists():
-            db_path.parent.mkdir(parents=True, exist_ok=True)
-            with gzip.open(gz_path, "rb") as f_in:
-                with open(db_path, "wb") as f_out:
-                    shutil.copyfileobj(f_in, f_out)
+        with _db_decompress_lock:
+            if not db_path.exists() or db_path.stat().st_size == 0:
+                if gz_path.exists():
+                    db_path.parent.mkdir(parents=True, exist_ok=True)
+                    tmp_path = db_path.with_suffix(".db.tmp")
+                    with gzip.open(gz_path, "rb") as f_in:
+                        with open(tmp_path, "wb") as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+                    tmp_path.replace(db_path)
 
 
 def get_db():
@@ -260,6 +268,7 @@ def get_university_departments(uni_name: str):
 
     summary = c.fetchone()
     if not summary:
+        norm_q = tr_normalize(uni_name)
         c.execute("""
             SELECT 
                 universiteAdi,
@@ -275,7 +284,8 @@ def get_university_departments(uni_name: str):
             FROM programs_2026
             WHERE TR_NORM(universiteAdi) LIKE ?
             GROUP BY universiteAdi
-        """, (f"%{tr_normalize(uni_name)}%",))
+            ORDER BY TR_NORM(universiteAdi) LIKE ? DESC, LENGTH(universiteAdi) ASC
+        """, (f"%{norm_q}%", f"{norm_q}%"))
         summary = c.fetchone()
 
     if not summary:
@@ -336,7 +346,7 @@ def get_programs(
         params.append(university)
 
     if city:
-        c_list = [ct.strip() for ct in city.split(",") if ct.strip()]
+        c_list = list(dict.fromkeys(ct.strip() for ct in city.split(",") if ct.strip()))[:85]
         if len(c_list) == 1:
             conditions.append("ilAdi = ?")
             params.append(c_list[0])
@@ -346,7 +356,7 @@ def get_programs(
             params.extend(c_list)
 
     if score_type:
-        st_list = [s.strip() for s in score_type.split(",") if s.strip()]
+        st_list = list(dict.fromkeys(s.strip() for s in score_type.split(",") if s.strip()))[:10]
         if len(st_list) == 1:
             conditions.append("puanTuru = ?")
             params.append(st_list[0])
@@ -356,7 +366,7 @@ def get_programs(
             params.extend(st_list)
 
     if uni_type:
-        ut_list = [u.strip() for u in uni_type.split(",") if u.strip()]
+        ut_list = list(dict.fromkeys(u.strip() for u in uni_type.split(",") if u.strip()))[:10]
         if len(ut_list) == 1:
             conditions.append("universiteTuru = ?")
             params.append(ut_list[0])
@@ -385,7 +395,8 @@ def get_programs(
         "minPuan": "minPuan",
         "kontenjan": "kontenjan",
         "universiteAdi": "universiteAdi",
-        "birimAdi": "birimAdi"
+        "birimAdi": "birimAdi",
+        "puanTuru": "puanTuru",
     }
     sort_col = allowed_sorts.get(sort_by, "basariSirasi")
     direction = "DESC" if sort_dir.upper() == "DESC" else "ASC"
@@ -521,8 +532,11 @@ def get_program_trends(program_code: int):
 
     # Fallback: if program code changed across years (e.g. Boğaziçi YBS), look up precomputed program_code_map
     if not history:
-        c.execute("SELECT historical_code FROM program_code_map WHERE code_2026 = ? ORDER BY historical_code ASC", (program_code,))
-        matched_codes = [row["historical_code"] for row in c.fetchall()]
+        try:
+            c.execute("SELECT historical_code FROM program_code_map WHERE code_2026 = ? ORDER BY historical_code ASC", (program_code,))
+            matched_codes = [row["historical_code"] for row in c.fetchall()]
+        except sqlite3.OperationalError:
+            matched_codes = []
 
         if matched_codes:
             placeholders = ",".join("?" for _ in matched_codes)
@@ -534,9 +548,13 @@ def get_program_trends(program_code: int):
                     top_1_pref_count, top_3_pref_count, placed_pref_rank_avg
                 FROM admissions_history
                 WHERE program_code IN ({placeholders})
-                ORDER BY year ASC
+                ORDER BY year ASC, program_code ASC
             """, matched_codes)
-            history = [dict(r) for r in c.fetchall()]
+            raw_history = [dict(r) for r in c.fetchall()]
+            dedup_by_year = {}
+            for row in raw_history:
+                dedup_by_year[int(row["year"])] = row
+            history = [dedup_by_year[yr] for yr in sorted(dedup_by_year)]
 
             c.execute(f"""
                 SELECT year, lesson_name, exam_type, average_net, max_questions
@@ -592,41 +610,41 @@ def get_program_trends(program_code: int):
             "total_preferences": h.get("total_preferences"),
         }
 
-    # Add 2025 entry from YÖK Atlas scraped data (basariSirasi1, minPuan1, gk1)
-    r2025 = _safe_float(prog_dict.get("basariSirasi1"))
-    s2025 = _safe_float(prog_dict.get("minPuan1"))
-    q2025 = _safe_int(prog_dict.get("gk1"))
-
-    if 2025 not in yearly_map and (r2025 is not None or s2025 is not None or q2025 is not None):
-        yearly_map[2025] = {
-            "year": 2025,
-            "rank": r2025,
-            "score": s2025,
-            "quota": q2025,
-            "enrolled": None,
-            "demand_per_quota": None,
-            "total_preferences": None,
-        }
-
-    # Ensure history list includes 2025 for chart and history consumers
+    # Backfill 2023, 2024, and 2025 entries from YÖK Atlas scraped data when absent from Kaggle history
     hist_years = {int(h["year"]) for h in history}
-    if 2025 not in hist_years and (r2025 is not None or s2025 is not None):
-        history.append({
-            "year": 2025,
-            "total_quota": q2025,
-            "total_enrolled": None,
-            "male": None,
-            "female": None,
-            "final_score_012": s2025,
-            "final_rank_012": r2025,
-            "initial_placement_rate": None,
-            "total_preferences": None,
-            "demand_per_quota": None,
-            "avg_preference_rank": None,
-            "top_1_pref_count": None,
-            "top_3_pref_count": None,
-            "placed_pref_rank_avg": None,
-        })
+    for yr_offset, yr in ((3, 2023), (2, 2024), (1, 2025)):
+        r_yr = _safe_float(prog_dict.get(f"basariSirasi{yr_offset}"))
+        s_yr = _safe_float(prog_dict.get(f"minPuan{yr_offset}"))
+        q_yr = _safe_int(prog_dict.get(f"gk{yr_offset}"))
+
+        if yr not in yearly_map and (r_yr is not None or s_yr is not None or q_yr is not None):
+            yearly_map[yr] = {
+                "year": yr,
+                "rank": r_yr,
+                "score": s_yr,
+                "quota": q_yr,
+                "enrolled": None,
+                "demand_per_quota": None,
+                "total_preferences": None,
+            }
+
+        if yr not in hist_years and (r_yr is not None or s_yr is not None):
+            history.append({
+                "year": yr,
+                "total_quota": q_yr,
+                "total_enrolled": None,
+                "male": None,
+                "female": None,
+                "final_score_012": s_yr,
+                "final_rank_012": r_yr,
+                "initial_placement_rate": None,
+                "total_preferences": None,
+                "demand_per_quota": None,
+                "avg_preference_rank": None,
+                "top_1_pref_count": None,
+                "top_3_pref_count": None,
+                "placed_pref_rank_avg": None,
+            })
 
     history.sort(key=lambda x: int(x["year"]))
 

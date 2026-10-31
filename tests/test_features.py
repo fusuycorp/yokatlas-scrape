@@ -120,6 +120,17 @@ class TestUniversityDepartmentsAPI:
         assert data["total"] > 0
         assert len(data["departments"]) == data["total"]
 
+        # Regression: base university names that are substrings of other universities must resolve
+        # to the exact prefix university, not an alphabetically earlier substring match.
+        for query_name, expected_prefix in [
+            ("SAĞLIK BİLİMLERİ ÜNİVERSİTESİ", "SAĞLIK BİLİMLERİ ÜNİVERSİTESİ"),
+            ("GAZİ ÜNİVERSİTESİ", "GAZİ ÜNİVERSİTESİ"),
+            ("AKDENİZ ÜNİVERSİTESİ", "AKDENİZ ÜNİVERSİTESİ"),
+        ]:
+            resp = client.get(f"/api/universities/{query_name}/departments")
+            assert resp.status_code == 200
+            assert resp.json()["university"]["universiteAdi"].startswith(expected_prefix)
+
     def test_get_university_departments_not_found(self):
         """Test HTTP 404 response for non-existent university."""
         response = client.get("/api/universities/NON_EXISTENT_UNIVERSITY_XYZ_999/departments")
@@ -299,6 +310,16 @@ class TestProgramTrendsAPI:
         assert response.status_code == 200
         data = response.json()
         assert len(data["history"]) > 0, "Tiered vakıf fallback resolved no history"
+        # Ensure no duplicate years exist in history
+        years = [h["year"] for h in data["history"]]
+        assert len(years) == len(set(years)), f"Duplicate years in history: {years}"
+
+        # Regression: Ücretli program with no historical Ücretli code must NOT fall back to Burslu
+        # (203101291 = Medipol Tıp İngilizce Ücretli; only 2025/2026 YÖK Atlas columns should appear, not Burslu rank ~31)
+        resp_paid = client.get("/api/trends/203101291")
+        assert resp_paid.status_code == 200
+        paid_ranks = [h["final_rank_012"] for h in resp_paid.json()["history"] if h["final_rank_012"] is not None]
+        assert all(r > 1000 for r in paid_ranks), f"Paid medicine poisoned by Burslu ranks: {paid_ranks}"
 
 
 # ==============================================================================

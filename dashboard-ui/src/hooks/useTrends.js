@@ -11,27 +11,26 @@ export function useTrends(initialProgramCode = DEFAULT_TREND_PROGRAM_CODE) {
   useEffect(() => {
     if (!progCode) return;
 
-    let isMounted = true;
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
 
     uniatlasService
-      .getProgramTrends(progCode)
+      .getProgramTrends(progCode, { signal: controller.signal })
       .then((res) => {
-        if (isMounted) {
+        if (!controller.signal.aborted) {
           setData(res);
           setLoading(false);
         }
       })
       .catch((err) => {
-        if (isMounted) {
-          setError(err.message);
-          setLoading(false);
-        }
+        if (err.name === 'AbortError' || controller.signal.aborted) return;
+        setError(err.message);
+        setLoading(false);
       });
 
     return () => {
-      isMounted = false;
+      controller.abort();
     };
   }, [progCode]);
 

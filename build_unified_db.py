@@ -226,34 +226,34 @@ def build_unified_database():
     """)
     hist_progs = cursor.fetchall()
 
-    by_score = {}
+    by_key = {}
     for hp in hist_progs:
-        st = hp[1]
-        if st:
-            by_score.setdefault(st, []).append(hp)
+        u_base = (hp[3] or "").split("(")[0].strip()
+        d_base = (hp[4] or "").split("(")[0].strip()
+        st = hp[1] or ""
+        by_key.setdefault((st, u_base, d_base), []).append(hp)
 
     mapping_rows = []
     for code_2026, uni_raw, dept_raw, score_type, burs_raw in missing_progs:
-        uni_name = (uni_raw or "").split("(")[0].strip()
+        uni_name = tr_normalize((uni_raw or "").split("(")[0].strip())
         raw_dept = (dept_raw or "").strip()
-        base_dept = raw_dept.split("(")[0].strip()
-        norm_uni = tr_normalize(uni_name)
-        norm_base_dept = tr_normalize(base_dept)
+        base_dept = tr_normalize(raw_dept.split("(")[0].strip())
         norm_dept = tr_normalize(raw_dept)
         need_eng = "(ingilizce)" in norm_dept
+        need_kktc = "kktc" in norm_dept
+        need_uolp = "uolp" in norm_dept
         tier_value = burs_raw or "Ücretsiz"
 
-        candidates = by_score.get(score_type, []) if score_type else hist_progs
+        candidates = by_key.get((score_type or "", uni_name, base_dept), [])
         matched = [
-            hp for hp in candidates
-            if norm_uni in (hp[3] or "")
-            and norm_base_dept in (hp[4] or "")
-            and (not need_eng or "ingilizce" in (hp[5] or ""))
+            hp[0] for hp in candidates
+            if hp[2] == tier_value
+            and (need_eng == ("ingilizce" in (hp[5] or "")))
+            and (need_kktc == ("kktc" in (hp[5] or "")))
+            and (need_uolp == ("uolp" in (hp[5] or "")))
         ]
         if matched:
-            tier_matched = [hp[0] for hp in matched if hp[2] == tier_value]
-            final_codes = sorted(set(tier_matched if tier_matched else [hp[0] for hp in matched]))
-            for hc in final_codes:
+            for hc in sorted(set(matched)):
                 mapping_rows.append((code_2026, hc))
 
     cursor.executemany("INSERT INTO program_code_map (code_2026, historical_code) VALUES (?, ?)", mapping_rows)

@@ -21,27 +21,30 @@ export function usePrograms(initialFilters = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [page, setPage] = useState(initialFilters.page || globalFiltersCache.page);
-  const [search, setSearch] = useState(initialFilters.search || globalFiltersCache.search);
-  const [debouncedSearch, setDebouncedSearch] = useState(initialFilters.search || globalFiltersCache.search);
-  const [scoreType, setScoreType] = useState(initialFilters.scoreType || globalFiltersCache.scoreType);
-  const [uniType, setUniType] = useState(initialFilters.uniType || globalFiltersCache.uniType);
-  const [city, setCity] = useState(initialFilters.city || globalFiltersCache.city);
-  const [sortBy, setSortBy] = useState(initialFilters.sortBy || globalFiltersCache.sortBy);
-  const [sortDir, setSortDir] = useState(initialFilters.sortDir || globalFiltersCache.sortDir);
-  const [limit, setLimit] = useState(initialFilters.limit || globalFiltersCache.limit);
+  const [page, setPage] = useState(initialFilters.page ?? globalFiltersCache.page);
+  const [search, setSearch] = useState(initialFilters.search ?? globalFiltersCache.search);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialFilters.search ?? globalFiltersCache.search);
+  const [scoreType, setScoreType] = useState(initialFilters.scoreType ?? globalFiltersCache.scoreType);
+  const [uniType, setUniType] = useState(initialFilters.uniType ?? globalFiltersCache.uniType);
+  const [city, setCity] = useState(initialFilters.city ?? globalFiltersCache.city);
+  const [sortBy, setSortBy] = useState(initialFilters.sortBy ?? globalFiltersCache.sortBy);
+  const [sortDir, setSortDir] = useState(initialFilters.sortDir ?? globalFiltersCache.sortDir);
+  const [limit, setLimit] = useState(initialFilters.limit ?? globalFiltersCache.limit);
 
-  // Debounce search input by 250ms (instant clear on empty string)
+  // Debounce search input by 250ms (instant clear on empty string) and reset page to 1 on change
   useEffect(() => {
+    if (search === debouncedSearch) return;
     if (!search) {
       setDebouncedSearch('');
+      setPage(1);
       return;
     }
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
+      setPage(1);
     }, 250);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, debouncedSearch]);
 
   // Update global cache whenever state changes
   useEffect(() => {

@@ -66,10 +66,7 @@ export function ProgramExplorerTab({ onSelectProgram, onSelectUniversity, onTogg
       {/* Filter Toolbar */}
       <ProgramFilterToolbar
         search={search}
-        onSearchChange={(val) => {
-          setSearch(val);
-          setPage(1);
-        }}
+        onSearchChange={setSearch}
         scoreType={scoreType}
         onScoreTypeChange={(val) => {
           setScoreType(val);

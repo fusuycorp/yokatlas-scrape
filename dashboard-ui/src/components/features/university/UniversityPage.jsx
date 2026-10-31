@@ -431,7 +431,13 @@ export function UniversityPage({
 
       {/* Program Inspection Modal (Opens over the University Page) */}
       {inspectProgramCode && (
-        <React.Suspense fallback={null}>
+        <React.Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md">
+              <Spinner />
+            </div>
+          }
+        >
           <ProgramModal
             programCode={inspectProgramCode}
             onClose={() => setInspectProgramCode(null)}

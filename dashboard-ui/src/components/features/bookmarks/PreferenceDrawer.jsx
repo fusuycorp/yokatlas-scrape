@@ -82,7 +82,10 @@ export function PreferenceDrawer({ isOpen, onClose, savedPrograms, onRemoveBookm
                   </span>
                   <div className="truncate">
                     <button
-                      onClick={() => onSelectProgram?.(p.kilavuzKodu)}
+                      onClick={() => {
+                        onClose?.();
+                        onSelectProgram?.(p.kilavuzKodu);
+                      }}
                       className="font-bold text-xs text-white truncate cursor-pointer hover:underline hover:text-indigo-400 text-left transition block max-w-full"
                     >
                       {p.birimAdi}

@@ -21,27 +21,26 @@ export function useCompare(initialUnis = DEFAULT_COMPARE_UNIVERSITIES) {
   useEffect(() => {
     if (!selectedUnis || selectedUnis.length < 2) return;
 
-    let isMounted = true;
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
 
     uniatlasService
-      .compareUniversities(selectedUnis)
+      .compareUniversities(selectedUnis, { signal: controller.signal })
       .then((data) => {
-        if (isMounted) {
+        if (!controller.signal.aborted) {
           setComparisonData(data);
           setLoading(false);
         }
       })
       .catch((err) => {
-        if (isMounted) {
-          setError(err.message);
-          setLoading(false);
-        }
+        if (err.name === 'AbortError' || controller.signal.aborted) return;
+        setError(err.message);
+        setLoading(false);
       });
 
     return () => {
-      isMounted = false;
+      controller.abort();
     };
   }, [selectedUnis]);
 

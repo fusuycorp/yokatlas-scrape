@@ -47,19 +47,21 @@ export const uniatlasService = {
   /**
    * Compares 2 to 4 universities side-by-side.
    * @param {string[]} universities
+   * @param {RequestInit} [options]
    */
-  compareUniversities(universities = []) {
+  compareUniversities(universities = [], options = {}) {
     const query = new URLSearchParams();
     universities.forEach((u) => query.append('unis', u));
-    return apiClient(`/compare?${query.toString()}`);
+    return apiClient(`/compare?${query.toString()}`, options);
   },
 
   /**
    * Gets historical rank trajectory and student net scores for a program.
    * @param {number} programCode
+   * @param {RequestInit} [options]
    */
-  getProgramTrends(programCode) {
-    return apiClient(`/trends/${programCode}`);
+  getProgramTrends(programCode, options = {}) {
+    return apiClient(`/trends/${programCode}`, options);
   },
 
   /**

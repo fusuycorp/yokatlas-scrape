@@ -27,6 +27,35 @@ const PreferenceWizardTab = React.lazy(() =>
   import('./components/features/wizard/PreferenceWizardTab').then((m) => ({ default: m.PreferenceWizardTab }))
 );
 
+class ChunkErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="glass-panel p-8 rounded-2xl border border-slate-800 text-center space-y-4 my-8">
+          <p className="text-sm text-slate-300">Sayfa yüklenirken bir bağlantı hatası oluştu.</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition cursor-pointer"
+          >
+            Yeniden Yükle
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const UniversityPageWrapper = ({ onToggleBookmark, bookmarkedIds }) => {
   const { uniSlug } = useParams();
   const location = useLocation();
@@ -130,6 +159,7 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 md:pb-8 space-y-5 sm:space-y-6">
+        <ChunkErrorBoundary>
         <React.Suspense fallback={<div className="p-12"><Spinner /></div>}>
         <Routes>
           <Route path="/" element={
@@ -215,6 +245,7 @@ export default function App() {
           } />
         </Routes>
         </React.Suspense>
+        </ChunkErrorBoundary>
       </main>
 
       <Footer />

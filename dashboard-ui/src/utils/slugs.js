@@ -19,5 +19,9 @@ export function slugifyUniversity(uniName) {
 
 export function unslugifyUniversity(slug, availableUnis) {
   if (!slug || !availableUnis) return null;
-  return availableUnis.find((uni) => slugifyUniversity(uni) === slug) || null;
+  const exact = availableUnis.find((uni) => slugifyUniversity(uni) === slug);
+  if (exact) return exact;
+  return (
+    availableUnis.find((uni) => slugifyUniversity(uni.split('(')[0].trim()) === slug) || null
+  );
 }
